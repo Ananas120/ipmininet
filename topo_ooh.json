@@ -1,0 +1,29 @@
+{
+    "subnets" : {},
+    "AS" : {
+        "OOH" : {
+            "routers" : {
+                "milan" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "Telia" : {
+            "routers" : {},
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "UPC" : {
+            "routers" : {},
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        }
+    },
+    "links" : {}
+}
