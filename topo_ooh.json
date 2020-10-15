@@ -4,14 +4,14 @@
         "OOH" : {
             "routers" : {
                 "milan" : {},
-                "surich": {},
+                "zurich": {},
                 "sbg-g1" : {},
                 "sbg-g2": {},
-                "fra-fr5": {},
-                "fra-1_5": {},
+                "fra-5&fr5": {},
+                "fra-1&fr5": {},
                 "varsovie": {},
-                "pragues" : {},
-                "viennes" : {},
+                "prague" : {},
+                "vienne" : {},
                 "par-th2": {},
                 "par-gsw" : {},
                 "rbx-g2" : {},
@@ -27,7 +27,9 @@
         "Telia" : {
             "routers" : {
                 "telia_fra" : {},
-                "telia_mil" : {}
+                "telia_mil" : {},
+		"telia_var" : {},
+		"telia_ams" : {}
             },
             "hosts" : {},
             "rconfig" : {
@@ -36,8 +38,8 @@
         },
         "UPC" : {
             "routers" : {
-                "upc_varsovie" : {},
-                "upc_vienne" : {},
+                "upc_var" : {},
+                "upc_vie" : {},
                 "upc_fra" : {},
                 "upc_zrh" : {},
                 "upc_ams" : {}
@@ -60,7 +62,8 @@
         },
         "level3" : {
             "routers" : {
-                "level3_fra" : {}
+                "level3_fra" : {},
+                "level3_par" : {}
             },
             "hosts" : {},
             "rconfig" : {
@@ -80,7 +83,8 @@
         "cogent" : {
             "routers" : {
                 "cogent_par" : {},
-                "cogent_asm" : {}
+                "cogent_asm" : {},
+                "cogent_var" : {}
             },
             "hosts" : {},
             "rconfig" : {
@@ -107,5 +111,43 @@
             }
         },
     },
-    "links" : {}
+    "links" : {
+           "milan"    : ["zurich","sbg-g1","sbg-g2"],
+           "zurich"   : ["sbg-g1"],
+           "sbg-g1"   : ["sbg-g2","fra-1&fr5","par-th2"],
+           "sbg-g2"   : ["fra-5&fr5","par-gsw"],
+           "fra-5&fr5": ["ams-5","rbx-g2","vienne","varsovie","fra-1&fr5"],
+           "fra-1&fr5": ["ams-1","rbx-g1","vienne"],
+           "varsovie" : ["prague","ams-1"],
+           "prague"   : ["vienne"],
+           "vienne"   : [],
+           "par-th2"  : ["rbx-g1","rbx-g2","par-gsw"],
+           "par-gsw"  : ["rbx-g2"],
+           "rbx-g2"   : ["ams-5","rbx-g1"],
+           "rbx-g1"   : [],
+           "ams-5"    : ["ams-1"],
+           "ams-1"    : [],
+           "telia_fra"   : ["fra-1&fr5","fra-5&fr5"],
+           "telia_mil"   : ["milan"],
+	   "telia_var"   : ["varsovie"],
+	   "telia_ams"   : ["ams-1"],
+           "upc_var"     : ["varsovie"],
+           "upc_vie"     : ["vienne"],
+           "upc_fra"     : ["fra-5&fr5"],
+           "upc_zrh"     : ["zurich"],
+           "upc_ams"     : ["ams-5"],
+ 	   "seabone_fra" : ["fra-5&fr5"],
+           "seabone_mil" : ["milan"],
+           "seabone_par" : ["par-th2"],
+           "level3_fra"  : ["fra-5&fr5"],
+           "level3_par"  : ["par-gsw"]
+           "google_fra"  : ["fra-5&fr5"],
+           "google_par"  : ["par-gsw","par-th2"],
+           "cogent_par"  : ["par-gsw","par-th2"],
+           "cogent_asm"  : ["asm-1"],
+           "cogent_var"  : ["varsovie"],
+           "amazon_par"  : ["par-th2"],
+           "backbone_par": ["par-th2"],
+           "backbone_fra": ["fra-5&fr5"]
+    }
 }
