@@ -3,27 +3,109 @@
     "AS" : {
         "OOH" : {
             "routers" : {
-                "milan" : {}
+                "milan" : {},
+                "surich": {},
+                "sbg-g1" : {},
+                "sbg-g2": {},
+                "fra-fr5": {},
+                "fra-1_5": {},
+                "varsovie": {},
+                "pragues" : {},
+                "viennes" : {},
+                "par-th2": {},
+                "par-gsw" : {},
+                "rbx-g2" : {},
+                "rbx-g1" : {},
+                "ams-5" : {},
+                "ams-1" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf"]
+            }
+        },
+        "Telia" : {
+            "routers" : {
+                "telia_fra" : {},
+                "telia_mil" : {}
             },
             "hosts" : {},
             "rconfig" : {
                 "daemons" : ["ospf", "bgp"]
             }
         },
-        "Telia" : {
-            "routers" : {},
+        "UPC" : {
+            "routers" : {
+                "upc_varsovie" : {},
+                "upc_vienne" : {},
+                "upc_fra" : {},
+                "upc_zrh" : {},
+                "upc_ams" : {}
+            },
             "hosts" : {},
             "rconfig" : {
                 "daemons" : ["ospf", "bgp"]
             }
         },
-        "UPC" : {
-            "routers" : {},
+        "Seabone" : {
+            "routers" : {
+                "seabone_fra" : {},
+                "seabone_mil" : {},
+                "seabone_par" : {}
+            },
             "hosts" : {},
             "rconfig" : {
                 "daemons" : ["ospf", "bgp"]
             }
-        }
+        },
+        "level3" : {
+            "routers" : {
+                "level3_fra" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "google" : {
+            "routers" : {
+                "google_fra" : {},
+                "google_par" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "cogent" : {
+            "routers" : {
+                "cogent_par" : {},
+                "cogent_asm" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "amazon" : {
+            "routers" : {
+                "amazon_par" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
+        "core-backbone" : {
+            "routers" : {
+                "backbone_par" : {},
+                "backbone_fra" : {}
+            },
+            "hosts" : {},
+            "rconfig" : {
+                "daemons" : ["ospf", "bgp"]
+            }
+        },
     },
     "links" : {}
 }
