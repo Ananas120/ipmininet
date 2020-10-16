@@ -156,10 +156,6 @@ class JSONTopo(IPTopo):
                         print("Add {} and {} in the subnet".format(h, voisin))
                     self.addSubnet((h, voisin), subnets = [subnet_config['address']])
 
-
-
-
-# Press the green button to run the script.
     def __getattr__(self, item):
         if item.startswith('_JSONTopo__'):
             print(self.__dict__.keys())
@@ -167,7 +163,7 @@ class JSONTopo(IPTopo):
         return super().__getattr__(item)
     
 if __name__ == '__main__':
-    net = IPNet(topo=JSONTopo('topo_test.json', debug = True))
+    net = IPNet(topo=JSONTopo('topo_ooh.json', debug = True))
     print(net)
     try:
         net.start()

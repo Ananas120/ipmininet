@@ -1,0 +1,135 @@
+graph "Network Topology" {
+	compound=true rank=same
+	subgraph cluster_OOH {
+		label=OOH
+		subgraph OOH_rr {
+		}
+		subgraph OOHrouteurs {
+			rank=same
+			milan [shape=circle]
+			surich [shape=circle]
+			"sbg-g1" [shape=circle]
+			"sbg-g2" [shape=circle]
+			"fra-fr5" [shape=circle]
+			"fra-1_5" [shape=circle]
+			varsovie [shape=circle]
+			pragues [shape=circle]
+			viennes [shape=circle]
+			"par-th2" [shape=circle]
+			"par-gsw" [shape=circle]
+			"rbx-g2" [shape=circle]
+			"rbx-g1" [shape=circle]
+			"ams-5" [shape=circle]
+			"ams-1" [shape=circle]
+		}
+		subgraph OOH_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_Telia {
+		label=Telia
+		subgraph Telia_rr {
+		}
+		subgraph Teliarouteurs {
+			rank=same
+			telia_fra [shape=circle]
+			telia_mil [shape=circle]
+		}
+		subgraph Telia_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_UPC {
+		label=UPC
+		subgraph UPC_rr {
+		}
+		subgraph UPCrouteurs {
+			rank=same
+			upc_varsovie [shape=circle]
+			upc_vienne [shape=circle]
+			upc_fra [shape=circle]
+			upc_zrh [shape=circle]
+			upc_ams [shape=circle]
+		}
+		subgraph UPC_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_Seabone {
+		label=Seabone
+		subgraph Seabone_rr {
+		}
+		subgraph Seabonerouteurs {
+			rank=same
+			seabone_fra [shape=circle]
+			seabone_mil [shape=circle]
+			seabone_par [shape=circle]
+		}
+		subgraph Seabone_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_level3 {
+		label=level3
+		subgraph level3_rr {
+		}
+		subgraph level3routeurs {
+			rank=same
+			level3_fra [shape=circle]
+		}
+		subgraph level3_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_google {
+		label=google
+		subgraph google_rr {
+		}
+		subgraph googlerouteurs {
+			rank=same
+			google_fra [shape=circle]
+			google_par [shape=circle]
+		}
+		subgraph google_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_cogent {
+		label=cogent
+		subgraph cogent_rr {
+		}
+		subgraph cogentrouteurs {
+			rank=same
+			cogent_par [shape=circle]
+			cogent_asm [shape=circle]
+		}
+		subgraph cogent_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_amazon {
+		label=amazon
+		subgraph amazon_rr {
+		}
+		subgraph amazonrouteurs {
+			rank=same
+			amazon_par [shape=circle]
+		}
+		subgraph amazon_hosts {
+			rank=same
+		}
+	}
+	subgraph "cluster_core-backbone" {
+		label="core-backbone"
+		subgraph "core-backbone_rr" {
+		}
+		subgraph "core-backbonerouteurs" {
+			rank=same
+			backbone_par [shape=circle]
+			backbone_fra [shape=circle]
+		}
+		subgraph "core-backbone_hosts" {
+			rank=same
+		}
+	}
+}
