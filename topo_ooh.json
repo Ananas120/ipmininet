@@ -5,35 +5,49 @@
             "routers" : {
                 "milan" : {},
                 "zurich": {},
-                "sbg-g1" : {},
+                "sbg-g1" : {
+                    "clients" : ["sbg-g2", "zurich", "milan"]
+                },
                 "sbg-g2": {},
-                "fra-5_fr5": {},
-                "fra-1_fr5": {},
-                "varsovie": {},
+                "fra-5_fr5": {
+                    "clients" : ["rbx-g2", "vienne", "prague"]
+                },
+                "fra-1_fr5": {
+                    "clients" : ["rbx-g1", "vienne", "prague"]
+                },
+                "varsovie": {
+                    "clients" : ["prague"]
+                },
                 "prague" : {},
                 "vienne" : {},
-                "par-th2": {},
-                "par-gsw" : {},
+                "par-th2": {
+                    "clients" : ["rbx-g2", "rbx-g1"]
+                },
+                "par-gsw" : {
+                    "clients" : ["rbx-g2", "sbg-g2"]
+                },
                 "rbx-g2" : {},
                 "rbx-g1" : {},
-                "ams-5" : {},
+                "ams-5" : {
+                    "clients" : ["ams-1", "rbx-g2"]
+                },
                 "ams-1" : {}
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "Telia" : {
             "routers" : {
                 "telia_fra" : {},
                 "telia_mil" : {},
-		"telia_var" : {},
-		"telia_ams" : {}
+                "telia_var" : {},
+                "telia_ams" : {}
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "UPC" : {
@@ -46,7 +60,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "Seabone" : {
@@ -57,7 +71,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "level3" : {
@@ -67,7 +81,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "google" : {
@@ -77,7 +91,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "cogent" : {
@@ -88,7 +102,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "amazon" : {
@@ -97,7 +111,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         },
         "core-backbone" : {
@@ -107,7 +121,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf"]
+                "daemons" : ["ospf", "bgp"]
             }
         }
     },

@@ -3,28 +3,55 @@ graph "Network Topology" {
 	subgraph cluster_OOH {
 		label=OOH
 		subgraph OOH_rr {
+			"sbg-g1" [shape=doublecircle]
+			"fra-5_fr5" [shape=doublecircle]
+			"fra-1_fr5" [shape=doublecircle]
+			varsovie [shape=doublecircle]
+			"par-th2" [shape=doublecircle]
+			"par-gsw" [shape=doublecircle]
+			"ams-5" [shape=doublecircle]
 		}
 		subgraph OOHrouteurs {
 			rank=same
 			milan [shape=circle]
-			surich [shape=circle]
-			"sbg-g1" [shape=circle]
+			zurich [shape=circle]
 			"sbg-g2" [shape=circle]
-			"fra-fr5" [shape=circle]
-			"fra-1_5" [shape=circle]
-			varsovie [shape=circle]
-			pragues [shape=circle]
-			viennes [shape=circle]
-			"par-th2" [shape=circle]
-			"par-gsw" [shape=circle]
+			prague [shape=circle]
+			vienne [shape=circle]
 			"rbx-g2" [shape=circle]
 			"rbx-g1" [shape=circle]
-			"ams-5" [shape=circle]
 			"ams-1" [shape=circle]
 		}
 		subgraph OOH_hosts {
 			rank=same
 		}
+		milan -- zurich
+		milan -- "sbg-g1"
+		milan -- "sbg-g2"
+		zurich -- "sbg-g1"
+		"sbg-g1" -- "sbg-g2"
+		"sbg-g1" -- "fra-1_fr5"
+		"sbg-g1" -- "par-th2"
+		"sbg-g2" -- "fra-5_fr5"
+		"sbg-g2" -- "par-gsw"
+		"fra-5_fr5" -- "ams-5"
+		"fra-5_fr5" -- "rbx-g2"
+		"fra-5_fr5" -- vienne
+		"fra-5_fr5" -- varsovie
+		"fra-5_fr5" -- "fra-1_fr5"
+		"fra-1_fr5" -- "ams-1"
+		"fra-1_fr5" -- "rbx-g1"
+		"fra-1_fr5" -- vienne
+		varsovie -- prague
+		varsovie -- "ams-1"
+		prague -- vienne
+		"par-th2" -- "rbx-g1"
+		"par-th2" -- "rbx-g2"
+		"par-th2" -- "par-gsw"
+		"par-gsw" -- "rbx-g2"
+		"rbx-g2" -- "ams-5"
+		"rbx-g2" -- "rbx-g1"
+		"ams-5" -- "ams-1"
 	}
 	subgraph cluster_Telia {
 		label=Telia
@@ -34,6 +61,8 @@ graph "Network Topology" {
 			rank=same
 			telia_fra [shape=circle]
 			telia_mil [shape=circle]
+			telia_var [shape=circle]
+			telia_ams [shape=circle]
 		}
 		subgraph Telia_hosts {
 			rank=same
@@ -45,8 +74,8 @@ graph "Network Topology" {
 		}
 		subgraph UPCrouteurs {
 			rank=same
-			upc_varsovie [shape=circle]
-			upc_vienne [shape=circle]
+			upc_var [shape=circle]
+			upc_vie [shape=circle]
 			upc_fra [shape=circle]
 			upc_zrh [shape=circle]
 			upc_ams [shape=circle]
@@ -61,9 +90,9 @@ graph "Network Topology" {
 		}
 		subgraph Seabonerouteurs {
 			rank=same
-			seabone_fra [shape=circle]
-			seabone_mil [shape=circle]
-			seabone_par [shape=circle]
+			sea_fra [shape=circle]
+			sea_mil [shape=circle]
+			sea_par [shape=circle]
 		}
 		subgraph Seabone_hosts {
 			rank=same
@@ -76,6 +105,7 @@ graph "Network Topology" {
 		subgraph level3routeurs {
 			rank=same
 			level3_fra [shape=circle]
+			level3_par [shape=circle]
 		}
 		subgraph level3_hosts {
 			rank=same
@@ -101,7 +131,8 @@ graph "Network Topology" {
 		subgraph cogentrouteurs {
 			rank=same
 			cogent_par [shape=circle]
-			cogent_asm [shape=circle]
+			cogent_ams [shape=circle]
+			cogent_var [shape=circle]
 		}
 		subgraph cogent_hosts {
 			rank=same
@@ -125,11 +156,36 @@ graph "Network Topology" {
 		}
 		subgraph "core-backbonerouteurs" {
 			rank=same
-			backbone_par [shape=circle]
-			backbone_fra [shape=circle]
+			bbone_par [shape=circle]
+			bbone_fra [shape=circle]
 		}
 		subgraph "core-backbone_hosts" {
 			rank=same
 		}
 	}
+	telia_fra -- "fra-1_fr5"
+	telia_fra -- "fra-5_fr5"
+	telia_mil -- milan
+	telia_var -- varsovie
+	telia_ams -- "ams-1"
+	upc_var -- varsovie
+	upc_vie -- vienne
+	upc_fra -- "fra-5_fr5"
+	upc_zrh -- zurich
+	upc_ams -- "ams-5"
+	sea_fra -- "fra-5_fr5"
+	sea_mil -- milan
+	sea_par -- "par-th2"
+	level3_fra -- "fra-5_fr5"
+	level3_par -- "par-gsw"
+	google_fra -- "fra-5_fr5"
+	google_par -- "par-gsw"
+	google_par -- "par-th2"
+	cogent_par -- "par-gsw"
+	cogent_par -- "par-th2"
+	cogent_ams -- "ams-1"
+	cogent_var -- varsovie
+	amazon_par -- "par-th2"
+	bbone_par -- "par-th2"
+	bbone_fra -- "fra-5_fr5"
 }
