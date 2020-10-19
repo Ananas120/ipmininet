@@ -5,8 +5,8 @@
             "ipv4" : "204.32.46./24"
         },
         "net_mil" : {
-            "ipv6" : "{net_ovh}:01::/54",
-            "ipv4" : "{net_ovh}.112/28",
+            "ipv6" : "{net_ovh}0100::/56",
+            "ipv4" : "{net_ovh}112/28",
             "nodes" : ["milan"]
         }
     },

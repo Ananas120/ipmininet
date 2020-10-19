@@ -114,7 +114,7 @@ class JSONTopo(IPTopo):
             set_rr(self, rr = self.__routers[rr_name], peers = clients)
         
         if self.debug: print("Set fullmesh between RR : {}".format(list(rr.keys())))
-        bgp_fullmesh([self.__routers[rr_name] for rr_name in rr.keys()])
+        bgp_fullmesh(self, [self.__routers[rr_name] for rr_name in rr.keys()])
         
         
     def _build_hosts(self, as_name, hosts, ** default_config):
