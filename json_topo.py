@@ -150,18 +150,39 @@ class JSONTopo(IPTopo):
                     ebgp_session(self, node, voisin, link_type = _link_types[link_type])
         
     def _build_subnets(self, ** subnets):
+        prefixes = {
+            'ipv4' : {
+                name : config.get('ipv4', '/0').split('/')[0]
+                for name, config in subnets.items()
+            },
+            'ipv6' : {
+                name : config.get('ipv6', '/0').split('/')[0]
+                for name, config in subnets.items()
+            }
+        }
+        
         for subnet_name, subnet_config in subnets.items():
             if self.debug:
-                print("Creating subnet {} with prefix {}".format(subnet_name, subnet_config['address']))
+                print("Creating subnet {} with prefix :\n- IPv4 : {}\n- IPv6 : {}".format(
+                    subnet_name, 
+                    subnet_config.get('ipv4', None), 
+                    subnet_config.get('ipv6', None)
+                ))
             
-            for h, voisins in subnet_config['hosts'].items():
-                h = self.get(h)
-                if not isinstance(voisins, (list, tuple)): voisins = [voisins]
-                for voisin in voisins:
-                    voisin = self.get(voisin)
-                    if self.debug:
-                        print("Add {} and {} in the subnet".format(h, voisin))
-                    self.addSubnet((h, voisin), subnets = [subnet_config['address']])
+            addresses = []
+            if 'ipv4' in subnet_config:
+                addresses.append(subnet_config['ipv4'].format(** prefixes['ipv4']))
+            if 'ipv6' in subnet_config:
+                addresses.append(subnet_config['ipv6'].format(** prefixes['ipv6']))
+            
+            nodes = [self.get(node_name) for node_name in subnet_config.get('nodes', [])]
+            
+            if len(nodes) > 0:
+                if self.debug:
+                    print("Adding nodes {} to subnet".format(nodes))
+                self.addSubnet(nodes, subnets = addresses)
+            elif self.debug:
+                print("No node attached to this subnet")
 
     def __getattr__(self, item):
         if item.startswith('_JSONTopo__'):

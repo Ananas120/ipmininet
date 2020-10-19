@@ -1,5 +1,15 @@
 {
-    "subnets" : {},
+    "subnets" : {
+        "net_ovh" : {
+            "ipv6" : "beaf:cafe:babe:/48",
+            "ipv4" : "204.32.46./24"
+        },
+        "net_mil" : {
+            "ipv6" : "{net_ovh}:01::/54",
+            "ipv4" : "{net_ovh}.112/28",
+            "nodes" : ["milan"]
+        }
+    },
     "AS" : {
         "OVH" : {
             "routers" : {
