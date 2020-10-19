@@ -5,7 +5,7 @@ import json
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF6, RouterConfig, AF_INET6, set_rr, ebgp_session, SHARE
+from ipmininet.router.config import BGP, OSPF6, RouterConfig, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
 
 _link_types = {
     'share' : SHARE
@@ -100,15 +100,20 @@ class JSONTopo(IPTopo):
             
             self.__routers[r_name] = router
         
-        for i, (rr_name, c_name) in enumerate(self.__as[as_name]['rr'].items()):
-            autres_rr = [r for r in self.__as[as_name]['rr'].keys() if r != rr_name]
-            all_clients = c_name + autres_rr
-            
-            all_clients = [self.__routers[r_name] for r_name in all_clients]
+        self._build_rr(as_name)
+        
+    def _build_rr(self, as_name):
+        rr = self.__as[as_name]['rr']
+        for i, (rr_name, c_name) in enumerate(rr.items()):
+            clients = [self.__routers[r_name] for r_name in c_name]
             if self.debug: 
-                print("Setting router {} as Route Reflector with clients {}".format(rr_name, all_clients))
+                print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
             
-            set_rr(self, rr = self.__routers[rr_name], peers = all_clients)
+            set_rr(self, rr = self.__routers[rr_name], peers = clients)
+        
+        if self.debug: print("Set fullmesh between RR : {}".format(list(rr.keys())))
+        bgp_fullmesh([self.__routers[rr_name] for rr_name in rr.keys()])
+        
         
     def _build_hosts(self, as_name, hosts, ** default_config):
         for h_name, h_config in hosts.items():
