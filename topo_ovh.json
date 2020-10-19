@@ -1,9 +1,11 @@
 {
     "subnets" : {},
     "AS" : {
-        "OOH" : {
+        "OVH" : {
             "routers" : {
-                "milan" : {},
+                "milan" : {
+                    "clients" : ["zurich"]
+                },
                 "zurich": {},
                 "sbg-g1" : {
                     "clients" : ["sbg-g2", "zurich", "milan"]

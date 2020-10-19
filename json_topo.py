@@ -171,7 +171,7 @@ class JSONTopo(IPTopo):
     
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
-    net = IPNet(topo=JSONTopo('topo_ooh.json', debug = True))
+    net = IPNet(topo=JSONTopo('topo_ovh.json', debug = True))
     print(net)
     try:
         net.start()

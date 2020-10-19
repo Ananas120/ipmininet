@@ -10,6 +10,41 @@ RR_SHAPE    = 'doublecircle'
 HOST_SHAPE  = 'egg'
 
 def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwargs):
+    """
+        Function to convert BGP topology (configured as a json file) to a pygraphviz Grav instance. 
+        
+        Arguments : 
+            - topo_config   : dict or .json filename
+            - filename      : filename to save the plot (.gv file)
+            - kwargs        : values to the 'Graph.attr()' method
+            - ** sub_kwargs : kwargs to the 'Graph.attr()' method for sub-graph (the AS)
+        Return : 
+            - graph : pygraphviz.Graph instance
+        
+        Structure of the json file (or dict) : 
+        {
+            links : {
+                router_name : list_of_voisins
+                ...
+            },
+            AS      : {
+                routers : {
+                    router_name : dict (config router)
+                        - if RR : should have a 'clients' entry with the list of client-routers
+                    ...
+                },
+                hosts : {
+                    host_name : {} (unused value),
+                    ...
+                }
+            }
+        }
+        
+        Prerequisites : 
+            - install Graphviz to default path
+            - pip install pygraphviz json
+    """
+    # if json file, load the topology
     if isinstance(topo_config, str):
         with open(topo_config, 'r', encoding = 'utf-8') as file:
             topo_config = file.read()
@@ -22,9 +57,12 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
     as_edges = {}
     ebgp_edges = []
     
+    # Set all nodes to respective AS
     for as_name, as_config in topo_config['AS'].items():
         ases[as_name] = list(as_config['routers'].keys()) + list(as_config.get('hosts', {}).keys())
-        
+    
+    # Associate all links to their AS
+    # If trans-AS links, add them to the eBGP-links
     for node, voisins in topo_config['links'].items():
         as_1 = [as_name for as_name, as_r in ases.items() if node in as_r][0]
         for voisin in voisins:
@@ -46,6 +84,8 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
             else:
                 ebgp_edges.append(edge)
     
+    # For each AS, create a sub_graph, add their respective nodes (routeurs / hosts)
+    # and put links intra-AS. 
     for as_name, as_config in topo_config['AS'].items():
         with g.subgraph(name = 'cluster_' + as_name) as as_graph:
             as_graph.attr(** sub_kwargs, label = as_name)
@@ -76,6 +116,7 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
             for start, end, config in as_edges.get(as_name, []):
                 as_graph.edge(start, end, ** config)
     
+    # Make links between nodes from different AS (eBGP connections)
     for start, end, config in ebgp_edges:
         g.edge(start, end, ** config)
     
