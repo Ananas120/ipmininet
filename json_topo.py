@@ -91,6 +91,8 @@ class JSONTopo(IPTopo):
             if self.debug:
                 print("Adding router {} to AS {}".format(r_name, as_name))
                 
+            # option lo_addresses = [IPV6_ADDRESS, IPV4_ADDRESS] to set the loopback address of the router
+            # see https://ipmininet.readthedocs.io/en/latest/addressing.html
             router = self.addRouter(r_name, config = RouterConfig)
             
             add_daemons(router, r_config)
@@ -168,6 +170,7 @@ class JSONTopo(IPTopo):
         return super().__getattr__(item)
     
 if __name__ == '__main__':
+    # allocate_IPS = False to disable IP auto-allocation
     net = IPNet(topo=JSONTopo('topo_ooh.json', debug = True))
     print(net)
     try:
