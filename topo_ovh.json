@@ -59,34 +59,54 @@
         "OVH" : {
             "routers" : {
                 "milan" : {
-                    "clients" : ["zurich"]
-                },
+                    "clients" : ["zurich"],
+                    "niveau" : "2"
+                 },
                 "zurich": {},
                 "sbg-g1" : {
-                    "clients" : ["sbg-g2", "zurich", "milan"]
+                    "clients" : ["milan", "par-gsw", "fra-1_fr5"],
+                    "niveau" : "1"
                 },
-                "sbg-g2": {},
+                "sbg-g2": {
+                    "clients" : ["milan", "par-th2", "fra-5_fr5"],
+		    "niveau" : "1"
+                },
                 "fra-5_fr5": {
-                    "clients" : ["rbx-g2", "vienne", "prague"]
+                    "peers" : ["vienne", "varsovie", "ams-5", "fra-1_fr5"],
+                    "niveau" :"2"
                 },
                 "fra-1_fr5": {
-                    "clients" : ["rbx-g1", "vienne", "prague"]
+                    "peers" : ["vienne", "varsovie", "ams-5"],
+                     "niveau" : "2"
                 },
                 "varsovie": {
-                    "clients" : ["prague"]
+                    "clients" : ["prague"],
+                     "peers" : ["vienne", "ams-5"],
+                    "niveau" : "2"
                 },
                 "prague" : {},
-                "vienne" : {},
+                "vienne" : {
+                    "clients" : ["prague"],
+                    "niveau" : "2"
+                 },
                 "par-th2": {
-                    "clients" : ["rbx-g2", "rbx-g1"]
+                    "peers" : ["par-gsw"],
+                    "niveau" : "2"
                 },
                 "par-gsw" : {
-                    "clients" : ["rbx-g2", "sbg-g2"]
+                    "niveau" : "2"
                 },
-                "rbx-g2" : {},
-                "rbx-g1" : {},
+                "rbx-g2" : {
+                    "clients" : ["ams-5", "fra-5_fr5", "vienne", "varsovie"],
+                    "niveau" : "1"
+                },
+                "rbx-g1" : {
+                   "clients" : ["fra-1_fr5", "vienne", "varsovie"],
+	            "niveau" : "1"
+                },
                 "ams-5" : {
-                    "clients" : ["ams-1", "rbx-g2"]
+                    "clients" : ["ams-1"],
+                    "niveau" : "2"
                 },
                 "ams-1" : {}
             },
@@ -183,13 +203,13 @@
         }
     },
     "links" : {
-        "milan"    : ["zurich","sbg-g1","sbg-g2"],
+        "milan"    : ["zurich",["sbg-g1", "3"],["sbg-g2", "3"]],
         "zurich"   : ["sbg-g1"],
-        "sbg-g1"   : ["sbg-g2","fra-1_fr5","par-th2"],
-        "sbg-g2"   : ["fra-5_fr5","par-gsw"],
-        "fra-5_fr5": ["ams-5","rbx-g2","vienne","varsovie","fra-1_fr5"],
-        "fra-1_fr5": ["ams-1","rbx-g1","vienne"],
-        "varsovie" : ["prague","ams-1"],
+        "sbg-g1"   : ["sbg-g2","fra-1_fr5",["par-th2","2"]],
+        "sbg-g2"   : ["fra-5_fr5",["par-gsw", "2"]],
+        "fra-5_fr5": [["ams-5","2"],["rbx-g2","2"],["vienne","2"],["varsovie","4"],"fra-1_fr5"],
+        "fra-1_fr5": [["ams-1","2"],["rbx-g1","2"],["vienne","2"]]
+        "varsovie" : [["prague","4"],["ams-1","4"]],
         "prague"   : ["vienne"],
         "vienne"   : [],
         "par-th2"  : ["rbx-g1","rbx-g2","par-gsw"],
