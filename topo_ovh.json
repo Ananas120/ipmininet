@@ -69,7 +69,7 @@
                 },
                 "sbg-g2": {
                     "clients" : ["milan", "par-th2", "fra-5_fr5"],
-		    "niveau" : "1"
+                    "niveau" : "1"
                 },
                 "fra-5_fr5": {
                     "peers" : ["vienne", "varsovie", "ams-5", "fra-1_fr5"],
@@ -112,7 +112,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "Telia" : {
@@ -124,7 +124,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "UPC" : {
@@ -137,7 +137,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "Seabone" : {
@@ -148,7 +148,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "level3" : {
@@ -158,7 +158,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "google" : {
@@ -168,7 +168,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "cogent" : {
@@ -179,7 +179,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "amazon" : {
@@ -188,7 +188,7 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "core-backbone" : {
@@ -198,27 +198,44 @@
             },
             "hosts" : {},
             "rconfig" : {
-                "daemons" : ["ospf", "bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         }
     },
     "links" : {
-        "milan"    : ["zurich",["sbg-g1", "3"],["sbg-g2", "3"]],
+        "milan"    : [
+            "zurich", 
+            ["sbg-g1", {"igp_metric": 3}], 
+            ["sbg-g2", {"igp_metric": 3}]
+        ],
         "zurich"   : ["sbg-g1"],
-        "sbg-g1"   : ["sbg-g2","fra-1_fr5",["par-th2","2"]],
-        "sbg-g2"   : ["fra-5_fr5",["par-gsw", "2"]],
-        "fra-5_fr5": [["ams-5","2"],["rbx-g2","2"],["vienne","2"],["varsovie","4"],"fra-1_fr5"],
-        "fra-1_fr5": [["ams-1","2"],["rbx-g1","2"],["vienne","2"]]
-        "varsovie" : [["prague","4"],["ams-1","4"]],
+        "sbg-g1"   : ["sbg-g2","fra-1_fr5", ["par-th2", {"igp_metric": 2}]],
+        "sbg-g2"   : ["fra-5_fr5",["par-gsw", {"igp_metric": 2}]],
+        "fra-5_fr5": [
+            ["ams-5", {"igp_metric": 2}], 
+            ["rbx-g2", {"igp_metric": 2}], 
+            ["vienne", {"igp_metric": 2}], 
+            ["varsovie", {"igp_metric": 4}], 
+            "fra-1_fr5"
+        ],
+        "fra-1_fr5": [
+            ["ams-1", {"igp_metric" : 2}], 
+            ["rbx-g1", {"igp_metric" : 2}], 
+            ["vienne", {"igp_metric" : 2}]
+        ],
+        "varsovie" : [
+            ["prague", {"igp_metric" : 4}], 
+            ["ams-1", {"igp_metric" : 4}]
+        ],
         "prague"   : ["vienne"],
         "vienne"   : [],
-        "par-th2"  : ["rbx-g1","rbx-g2","par-gsw"],
+        "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],
         "par-gsw"  : ["rbx-g2"],
-        "rbx-g2"   : ["ams-5","rbx-g1"],
+        "rbx-g2"   : ["ams-5", "rbx-g1"],
         "rbx-g1"   : [],
         "ams-5"    : ["ams-1"],
         "ams-1"    : [],
-        "telia_fra"   : ["fra-1_fr5","fra-5_fr5"],
+        "telia_fra"   : ["fra-1_fr5", "fra-5_fr5"],
         "telia_mil"   : ["milan"],
         "telia_var"   : ["varsovie"],
         "telia_ams"   : ["ams-1"],

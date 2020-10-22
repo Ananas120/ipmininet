@@ -5,11 +5,33 @@ import json
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF6, RouterConfig, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
 
 _link_types = {
     'share' : SHARE
 }
+
+def _format_prefixes(subnets):
+    return {
+        'ipv4' : {
+            name : config.get('ipv4', '/0').split('/')[0]
+            for name, config in subnets.items()
+        },
+        'ipv6' : {
+            name : config.get('ipv6', '/0').split('/')[0]
+            for name, config in subnets.items()
+        }
+    }
+
+def _format_address(address_config, prefixes):    
+    addresses = []
+    if 'ipv4' in address_config:
+        addresses.append(address_config['ipv4'].format(** prefixes.get('ipv4', {})))
+    if 'ipv6' in address_config:
+        addresses.append(address_config['ipv6'].format(** prefixes.get('ipv6', {})))
+    
+    return addresses
+    
 
 class JSONTopo(IPTopo):
     def __init__(self, filename = 'topo.json', debug = False, *args, ** kwargs):
@@ -20,6 +42,7 @@ class JSONTopo(IPTopo):
         self.__hosts    = {}
         self.__links    = {}
         self.__subnets  = {}
+        self.__prefixes = {}
         super().__init__(self, * args, ** kwargs)
         
     def get(self, name):
@@ -38,12 +61,37 @@ class JSONTopo(IPTopo):
             if name in as_config['routers'] or name in as_config['hosts']: return as_name
         return None
         
+        
+    def add_daemons(self, router, daemons, default_daemons = []):
+        if isinstance(default_daemons, list):
+            default_daemons = {d : {} for d in default_daemons}
+        if isinstance(daemons, list): daemons = {d : {} for d in daemons}
+            
+        daemons = {** default_daemons, ** daemons}
+        for d, d_config in daemons.items():
+            if self.debug: print("Adding daemon {} with config {}".format(d, d_config))
+            if d == 'ospf':
+                router.addDaemon(OSPF)
+            elif d == 'ospf6':
+                router.addDaemon(OSPF6)
+            elif d == 'bgp':
+                if 'networks' in d_config:
+                    d_config['networks'] = _format_address(
+                        d_config['networks', self.__prefixes]
+                    )
+                
+                family = AF_INET6(** d_config)
+                router.addDaemon(BGP, address_families=(family,))
+            
+        return True
+    
     def build(self, *args, **kwargs):
         with open(self.filename, 'r', encoding = 'utf-8') as file:
             config = file.read()
         config = json.loads(config)
         
         self.__subnets = config.get('subnets', {})
+        self.__prefixes = _format_prefixes(config.get('subnets', {}))
         
         self._build_as(** config['AS'])
         self._build_links(** config.get('links', {}))
@@ -66,55 +114,57 @@ class JSONTopo(IPTopo):
             self.addAS(i, self.get_routers(as_name))
         
     def _build_routers(self, as_name, routers, ** default_config):
-        def add_daemons(router, config):
-            daemons = default_config.get('daemons', [])
-            if isinstance(daemons, list): daemons = {d : {} for d in daemons}
-            daemons = {** daemons, ** config.get('daemons', {})}
-            for d, d_config in daemons.items():
-                if self.debug: print("Adding daemon {} with config {}".format(d, d_config))
-                if d == 'ospf':
-                    router.addDaemon(OSPF6)
-                elif d == 'bgp':
-                    if 'networks' in d_config:
-                        d_config['networks'] = [
-                            self.__subnets[addr_name]['address']
-                            for addr_name in d_config['networks']
-                        ]
-                    family = AF_INET6(** d_config)
-                    router.addDaemon(BGP, address_families=(family,))
-            
-            return True
-            
+        default_daemons = default_config.pop('daemons', [])
+
         for r_name, r_config in routers.items():
             self.__as[as_name]['routers'].append(r_name)
             
             if self.debug:
                 print("Adding router {} to AS {}".format(r_name, as_name))
-                
-            # option lo_addresses = [IPV6_ADDRESS, IPV4_ADDRESS] to set the loopback address of the router
-            # see https://ipmininet.readthedocs.io/en/latest/addressing.html
-            router = self.addRouter(r_name, config = RouterConfig)
+                        
+            r_config = {** default_config, ** r_config}
+            if 'lo_addresses' in r_config:
+                # option lo_addresses = [IPV6_ADDRESS, IPV4_ADDRESS] to set the loopback address of the router
+                # see https://ipmininet.readthedocs.io/en/latest/addressing.html
+                r_config['lo_addresses'] = _format_address(
+                    r_config['lo_addresses'], self.__prefixes
+                )
             
-            add_daemons(router, r_config)
+            r_kwargs = {k : v for k, v in r_config.items() if k in ('lo_addresses', )}
+            router = self.addRouter(r_name, config = RouterConfig, ** r_kwargs)
+            self.add_daemons(router, r_config.get('daemons', []), default_daemons)
             
             if 'clients' in r_config:
-                self.__as[as_name]['rr'][r_name] = r_config['clients']
+                niv = r_config.get('niveau', 1)
+                rr_config = {'niveau' : niv}
+                if 'clients' in r_config: rr_config['clients'] = r_config['clients']
+                if 'peers' in r_config: rr_config['peers'] = r_config['peers']
+                    
+                self.__as[as_name]['rr'].setdefault(niv, {})
+                self.__as[as_name]['rr'][niv][r_name] = rr_config
             
             self.__routers[r_name] = router
         
         self._build_rr(as_name)
         
     def _build_rr(self, as_name):
-        rr = self.__as[as_name]['rr']
-        for i, (rr_name, c_name) in enumerate(rr.items()):
-            clients = [self.__routers[r_name] for r_name in c_name]
-            if self.debug: 
-                print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
+        rr_hierarchy = self.__as[as_name]['rr']
+        for niveau, rr in rr_hierarchy.items():
+            if self.debug:
+                print("Adding RR of level {} :".format(niveau))
             
-            set_rr(self, rr = self.__routers[rr_name], peers = clients)
-        
-        if self.debug: print("Set fullmesh between RR : {}".format(list(rr.keys())))
-        bgp_fullmesh(self, [self.__routers[rr_name] for rr_name in rr.keys()])
+            for i, (rr_name, rr_config) in enumerate(rr.items()):
+                clients = [self.__routers[r_name] for r_name in rr_config.get('clients', [])]
+                if self.debug: 
+                    print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
+
+                if len(clients) > 0:
+                    set_rr(self, rr = self.__routers[rr_name], peers = clients)
+
+            copains_rr = rr_config.get('peers', list(rr.keys()))
+            if self.debug:
+                print("Set fullmesh between RR : {}".format(copains_rr))
+            bgp_fullmesh(self, [self.__routers[copain_rr] for copain_rr in copains_rr])
         
         
     def _build_hosts(self, as_name, hosts, ** default_config):
@@ -141,7 +191,7 @@ class JSONTopo(IPTopo):
                 if self.debug:
                     print("Adding link between {} and {} with config : {}".format(node, voisin, config))
                 
-                self.addLink(node, voisin, ** config)
+                link = self.addLink(node, voisin, ** config)
                 
                 if as_1 != as_2:
                     if self.debug:
@@ -149,18 +199,7 @@ class JSONTopo(IPTopo):
                     
                     ebgp_session(self, node, voisin, link_type = _link_types[link_type])
         
-    def _build_subnets(self, ** subnets):
-        prefixes = {
-            'ipv4' : {
-                name : config.get('ipv4', '/0').split('/')[0]
-                for name, config in subnets.items()
-            },
-            'ipv6' : {
-                name : config.get('ipv6', '/0').split('/')[0]
-                for name, config in subnets.items()
-            }
-        }
-        
+    def _build_subnets(self, ** subnets):        
         for subnet_name, subnet_config in subnets.items():
             if self.debug:
                 print("Creating subnet {} with prefix :\n- IPv4 : {}\n- IPv6 : {}".format(
@@ -169,11 +208,7 @@ class JSONTopo(IPTopo):
                     subnet_config.get('ipv6', None)
                 ))
             
-            addresses = []
-            if 'ipv4' in subnet_config:
-                addresses.append(subnet_config['ipv4'].format(** prefixes['ipv4']))
-            if 'ipv6' in subnet_config:
-                addresses.append(subnet_config['ipv6'].format(** prefixes['ipv6']))
+            addresses = _format_address(subnet_config, self.__prefixes)
             
             nodes = [self.get(node_name) for node_name in subnet_config.get('nodes', [])]
             
