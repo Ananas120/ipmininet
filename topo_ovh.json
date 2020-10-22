@@ -218,11 +218,10 @@
             ["varsovie", {"igp_metric": 4}], 
             "fra-1_fr5"
         ],
-        "fra-1_fr5": [
-            ["ams-1", {"igp_metric" : 2}], 
-            ["rbx-g1", {"igp_metric" : 2}], 
-            ["vienne", {"igp_metric" : 2}]
-        ],
+        "fra-1_fr5": {
+            "igp_metric" : 2,
+            "voisins" : ["ams-1", "rbx-g1", "vienne"]
+        },
         "varsovie" : [
             ["prague", {"igp_metric" : 4}], 
             ["ams-1", {"igp_metric" : 4}]
