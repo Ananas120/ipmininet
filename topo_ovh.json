@@ -194,7 +194,7 @@
     },
     "links" : {
         "milan"    : [
-            "zurich", 
+            ["zurich" {"subnet" : {"ipv6": "{ovh_net}::/127", "ipv4": "{ovh_net}100/31"}], 
             ["sbg-g1", {"igp_metric": 3}], 
             ["sbg-g2", {"igp_metric": 3}]
         ],
@@ -212,10 +212,10 @@
             "igp_metric" : 2,
             "voisins" : ["ams-1", "rbx-g1", "vienne"]
         },
-        "varsovie" : {
+        "varsovie" : [
             ["prague", {"igp_metric" : 4}], 
             ["ams-1", {"igp_metric" : 4}]
-        },
+        ],
         "prague"   : ["vienne"],
         "vienne"   : [],
         "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],
