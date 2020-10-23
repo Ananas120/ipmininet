@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import itertools
 
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
@@ -14,8 +15,10 @@ _link_types = {
 }
 
 class JSONTopo(IPTopo):
-    def __init__(self, filename = 'topo.json', debug = False, *args, ** kwargs):
-        self.debug = debug
+    def __init__(self, filename = 'topo.json', debug = False, *args,
+                 name = 'Network Topology', ** kwargs):
+        self.name   = name
+        self.debug  = debug
         self.filename = filename
         self.__as       = {}
         self.__routers  = {}
@@ -23,7 +26,138 @@ class JSONTopo(IPTopo):
         self.__links    = {}
         self.__subnets  = {}
         self.__prefixes = {}
+        self.__bgp_sessions = {
+            'fullmesh' : [],   # list de tuple / list (ensemble des rr dans le fullmesh)
+            'clients' : {},     # RR_name : clients
+            'ebgp' : {}         # AS : list (router - voisin)
+        }
         super().__init__(self, * args, ** kwargs)
+    
+    @property
+    def as_names(self):
+        return list(self.__as.keys())
+    
+    @property
+    def list_links(self):
+        links = []
+        for node, voisins in self.__links.items():
+            config = {}
+            if isinstance(voisins, dict):
+                config = voisins
+                voisins = config.pop('voisins', [])
+            if not isinstance(voisins, (list, tuple)): voisins = [voisins]
+                        
+            for voisin in voisins:
+                voisin_config = {}
+                if isinstance(voisin, list):
+                    voisin, voisin_config = voisin
+                
+                links.append([
+                    node, voisin, {** config, ** voisin_config}
+                ])
+        
+        return links
+    
+    @property
+    def list_routers(self):
+        return list(self.__routers.keys())
+    
+    @property
+    def list_non_rr_routers(self):
+        return [r_name for r_name in self.list_routers if r_name not in self.list_rr]
+    
+    @property
+    def list_rr(self):
+        liste = []
+        for as_name, as_infos in self.__as.items():
+            for nivea, rr in as_infos.get('rr', {}).items():
+                liste += list(rr.keys())
+        return liste
+    
+    @property
+    def list_ibgp_sessions(self):
+        links = []
+        for rr, clients in self.__bgp_sessions['clients'].items():
+            for c in clients:
+                links.append([rr, c])
+        
+        for rr_groupe in self.__bgp_sessions['fullmesh']:
+            for combinaison in itertools.combinations(rr_groupe, 2):
+                links.append(list(combinaison))
+        
+        return links
+    
+    @property
+    def list_ebgp_sessions(self):
+        already_added = {}
+        links = []
+        for as_name, as_voisins in self.__bgp_sessions['ebgp'].items():
+            for as_voisin, connections in as_voisins.items():
+                for router_as1, router_as2, link_type in connections:
+                    if router_as1 in already_added.get(router_as2, {}) or router_as2 in already_added.get(router_as1, {}):
+                        continue
+                    
+                    links.append([router_as1, router_as2, link_type])
+                    
+                    already_added.setdefault(router_as1, [])
+                    already_added[router_as1].append(router_as2)
+                
+        return links
+    
+    
+    
+    
+    def __str__(self):
+        des = '\n==============================\n'
+        des += 'Description of {}\n'.format(self.name)
+        des += '==============================\n\n'
+        des += self.describe() + '\n'
+        des += self.describe_ibpg() + '\n'
+        des += self.describe_ebgp() + '\n'
+        return des
+    
+    def describe(self):
+        des = "Description générale :\n"
+        des += "- ASes (number = {}) : {}\n".format(len(self.__as), self.as_names)
+        
+        des += "- Number of routers for each AS (total = {}) :\n".format(len(self.__routers))
+        for as_name, as_infos in self.__as.items():
+            if len(as_infos.get('routers', [])) > 0:
+                   des += "-- Number of routers for AS {} \t: {}\n".format(as_name, len(as_infos.get('routers')))
+            
+        des += "- Number of hosts for each AS (total = {}) :\n".format(len(self.__hosts))
+        for as_name, as_infos in self.__as.items():
+            if len(as_infos.get('hosts', [])) > 0:
+                   des += "-- Number of hosts for AS {} \t: {}\n".format(as_name, len(as_infos.get('hosts')))
+                   
+        des += "- Number of physical links : {}\n".format(len(self.list_links))
+        des += "- Number of iBGP sessions : {}\n".format(len(self.list_ibgp_sessions))
+        des += "- Number of eBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
+        return des
+    
+    def describe_ibpg(self):
+        des = "Description of iBGP connections :\n"
+        des += "- Number of iBGP sessions : {}\n".format(len(self.list_ibgp_sessions))
+        for as_name, as_infos in self.__as.items():
+            if len(as_infos.get('rr', {})) > 0:
+                des += "- RR hierarchy for AS {} :\n".format(as_name)
+            for rr_level, rr in sorted(
+                list(as_infos.get('rr', {}).items()), 
+                key = lambda infos: infos[0]
+            ):
+                des += "-- RR of level {} : {}\n".format(rr_level, list(rr.keys()))
+        
+        des += "- List of full-mesh :\n"
+        for fullmesh in self.__bgp_sessions['fullmesh']:
+            des += "-- {}\n".format(fullmesh)
+        
+        des += "- Number of non-RR router : {}\n".format(len(self.list_non_rr_routers))
+        return des
+    
+    def describe_ebgp(self):
+        des = "Description of eBGP sessions :\n"
+        des += "- Number of iBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
+        return des
         
     def get(self, name):
         return self.__routers.get(name, self.__hosts.get(name, None))
@@ -40,8 +174,37 @@ class JSONTopo(IPTopo):
         for as_name, as_config in self.__as.items():
             if name in as_config['routers'] or name in as_config['hosts']: return as_name
         return None
+    
+    def add_bgp_fullmesh(self, niveau, rr):
+        self.__bgp_sessions['fullmesh'].append(rr)
+        if self.debug:
+            print("Adding iBGP full-mesh between RR of level {} : {}".format(niveau, rr))
+        return bgp_fullmesh(self, [self.__routers[copain_rr] for copain_rr in rr])
+    
+    def add_bgp_clients(self, rr_name, clients):
+        self.__bgp_sessions['clients'][rr_name] = clients
+        if self.debug: 
+            print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
+
+        if len(clients) > 0:
+            set_rr(self, rr = self.__routers[rr_name], peers = clients)
+        return True
+    
+    def add_ebgp_session(self, node, voisin, as_1, as_2, link_type = 'share'):
+        self.__bgp_sessions['ebgp'].setdefault(as_1, {})
+        self.__bgp_sessions['ebgp'][as_1].setdefault(as_2, [])
         
+        self.__bgp_sessions['ebgp'].setdefault(as_2, {})
+        self.__bgp_sessions['ebgp'][as_2].setdefault(as_1, [])
         
+        self.__bgp_sessions['ebgp'][as_1][as_2].append([node, voisin, link_type])
+        self.__bgp_sessions['ebgp'][as_2][as_1].append([voisin, node, link_type])
+        
+        if self.debug:
+            print("{} and {} have different AS ({} vs {}), creating an eBGP connection with {} link".format(node, voisin, as_1, as_2, link_type))
+        
+        return ebgp_session(self, node, voisin, link_type = _link_types[link_type])
+    
     def add_daemons(self, router, daemons, default_daemons = []):
         if isinstance(default_daemons, list):
             default_daemons = {d : {} for d in default_daemons}
@@ -135,16 +298,15 @@ class JSONTopo(IPTopo):
             
             for i, (rr_name, rr_config) in enumerate(rr.items()):
                 clients = [self.__routers[r_name] for r_name in rr_config.get('clients', [])]
-                if self.debug: 
-                    print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
 
-                if len(clients) > 0:
-                    set_rr(self, rr = self.__routers[rr_name], peers = clients)
-
-            copains_rr = rr_config.get('peers', list(rr.keys()))
-            if self.debug:
-                print("Set fullmesh between RR : {}".format(copains_rr))
-            bgp_fullmesh(self, [self.__routers[copain_rr] for copain_rr in copains_rr])
+                self.add_bgp_clients(rr_name, clients)
+                
+                if niveau > 1 and 'peers' in rr_config:
+                    copains_rr = [rr_name] + rr_config['peers']
+                    self.add_bgp_fullmesh(niveau, copains_rr)
+                    
+            if niveau == 1:
+                self.add_bgp_fullmesh(niveau, list(rr.keys()))
         
         
     def _build_hosts(self, as_name, hosts, ** default_config):
@@ -209,10 +371,7 @@ class JSONTopo(IPTopo):
                 link = self.addLink(node, voisin, ** link_kwargs)
                 
                 if as_1 != as_2:
-                    if self.debug:
-                        print("{} and {} have different AS ({} vs {}), creating an eBGP connection with {} link".format(node, voisin, as_1, as_2, link_type))
-                    
-                    ebgp_session(self, node, voisin, link_type = _link_types[link_type])
+                    self.add_ebgp_session(node, voisin, as_1, as_2, link_type)
         
     def _build_subnets(self, ** subnets):        
         for subnet_name, subnet_config in subnets.items():
@@ -235,15 +394,17 @@ class JSONTopo(IPTopo):
                 print("No node attached to this subnet")
 
     def __getattr__(self, item):
-        if item.startswith('_JSONTopo__'):
-            print(self.__dict__.keys())
-            return self.__dict__[item]
+        if not item.startswith('add'):
+            return self.__getattribute__(item)
         return super().__getattr__(item)
     
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
-    net = IPNet(topo=JSONTopo('topo_ovh.json', debug = True))
-    print(net)
+    topo = JSONTopo(
+        filename = 'topo_ovh.json', debug = True, name = 'OVH Est-Europa topology'
+    )
+    net = IPNet(topo=topo)
+    print(topo)
     try:
         net.start()
         IPCLI(net)

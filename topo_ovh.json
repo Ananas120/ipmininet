@@ -194,7 +194,7 @@
     },
     "links" : {
         "milan"    : [
-            ["zurich" {"subnet" : {"ipv6": "{ovh_net}::/127", "ipv4": "{ovh_net}100/31"}], 
+            "zurich",
             ["sbg-g1", {"igp_metric": 3}], 
             ["sbg-g2", {"igp_metric": 3}]
         ],
