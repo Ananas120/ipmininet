@@ -60,53 +60,43 @@
             "routers" : {
                 "milan" : {
                     "clients" : ["zurich"],
-                    "niveau" : "2"
+                    "niveau" : 2
                  },
                 "zurich": {},
-                "sbg-g1" : {
-                    "clients" : ["milan", "par-gsw", "fra-1_fr5"],
-                    "niveau" : "1"
-                },
-                "sbg-g2": {
-                    "clients" : ["milan", "par-th2", "fra-5_fr5"],
-                    "niveau" : "1"
-                },
+                "sbg-g1" : {},
+                "sbg-g2": {},
                 "fra-5_fr5": {
-                    "peers" : ["vienne", "varsovie", "ams-5", "fra-1_fr5"],
-                    "niveau" :"2"
+                    "peers" : ["vienne", "varsovie"],
+                    "clients" : ["sbg-g2", "rbx-g2"],
+                    "niveau" : 2
                 },
                 "fra-1_fr5": {
-                    "peers" : ["vienne", "varsovie", "ams-5"],
-                     "niveau" : "2"
+                    "clients" : ["sbg-g1", "rbx-g1", "zurich", "ams-5"],
+                     "niveau" : 1
                 },
                 "varsovie": {
                     "clients" : ["prague"],
-                     "peers" : ["vienne", "ams-5"],
-                    "niveau" : "2"
+                    "niveau" : 2
                 },
                 "prague" : {},
                 "vienne" : {
                     "clients" : ["prague"],
-                    "niveau" : "2"
+                    "niveau" : 2
                  },
                 "par-th2": {
+                    "clients" : ["sbg-g1", "rbx-g1"],
                     "peers" : ["par-gsw"],
-                    "niveau" : "2"
+                    "niveau" : 2
                 },
                 "par-gsw" : {
-                    "niveau" : "2"
+                    "clients" : ["rbx-g2", "sbg-g2"],
+                    "niveau" : 2
                 },
-                "rbx-g2" : {
-                    "clients" : ["ams-5", "fra-5_fr5", "vienne", "varsovie"],
-                    "niveau" : "1"
-                },
-                "rbx-g1" : {
-                   "clients" : ["fra-1_fr5", "vienne", "varsovie"],
-	            "niveau" : "1"
-                },
+                "rbx-g2" : {},
+                "rbx-g1" : {},
                 "ams-5" : {
-                    "clients" : ["ams-1"],
-                    "niveau" : "2"
+                    "clients" : ["ams-1", "varsovie", "fra-5_fr5", "vienne", "rbx-g2"],
+                    "niveau" : 1
                 },
                 "ams-1" : {}
             },
@@ -222,10 +212,10 @@
             "igp_metric" : 2,
             "voisins" : ["ams-1", "rbx-g1", "vienne"]
         },
-        "varsovie" : [
+        "varsovie" : {
             ["prague", {"igp_metric" : 4}], 
             ["ams-1", {"igp_metric" : 4}]
-        ],
+        },
         "prague"   : ["vienne"],
         "vienne"   : [],
         "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],

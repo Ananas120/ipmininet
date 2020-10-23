@@ -115,7 +115,7 @@ class JSONTopo(IPTopo):
             self.add_daemons(router, r_config.get('daemons', []), default_daemons)
             
             if 'clients' in r_config:
-                niv = r_config.get('niveau', 1)
+                niv = r_config.get('niveau', '1')
                 rr_config = {'niveau' : niv}
                 if 'clients' in r_config: rr_config['clients'] = r_config['clients']
                 if 'peers' in r_config: rr_config['peers'] = r_config['peers']
