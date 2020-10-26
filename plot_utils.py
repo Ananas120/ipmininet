@@ -65,18 +65,36 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
     # If trans-AS links, add them to the eBGP-links
     for node, voisins in topo_config['links'].items():
         as_1 = [as_name for as_name, as_r in ases.items() if node in as_r][0]
+        config = {}
+        if isinstance(voisins, dict):
+            config = voisins
+            voisins = config.pop('voisins')
+        if not isinstance(voisins, (list, tuple)): voisins = [voisins]
+        
         for voisin in voisins:
-            config = {}
+            voisin_configconfig = {}
             if isinstance(voisin, list):
-                voisin, config = voisin
+                voisin, voisin_configconfig = voisin
+            voisin_config = {** config, ** voisin_config}
+            
             as_2 = [as_name for as_name, as_r in ases.items() if voisin in as_r]
             if len(as_2) == 0:
                 print("Error with {}".format(voisin))
                 return None
             as_2 = as_2[0]
             
-            kwargs = {}
-            if 'igp_metric' in config: kwargs['label'] = 'IGP = {}'.format(config['igp_metric'])
+            kwargs = {'label' : [], 'weight' : 5}
+            if 'igp_metric' in voisin_config:
+                kwargs['label'].append('IGP = {}'.format(voisin_config['igp_metric']))
+                kwargs['weight'] = 5 - kwargs.get('igp_metric', 1)
+            if 'med' in voisin_config:
+                kwargs['label'].append('MED = {}'.format(voisin_config['med']))
+                kwargs['weight'] = 5 - kwargs.get('med', 1)
+            if 'subnet' in voisin_config:
+                kwargs['label'].append('{}'.format(voisin_config['subnet']))
+            kwargs['label'] = '\n'.join(kwargs['label'])
+            
+            
             edge = [node, voisin, kwargs]
             if as_1 == as_2:
                 as_edges.setdefault(as_1, [])

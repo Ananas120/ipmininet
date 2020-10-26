@@ -16,10 +16,11 @@ _link_types = {
 
 class JSONTopo(IPTopo):
     def __init__(self, filename = 'topo.json', debug = False, *args,
-                 name = 'Network Topology', ** kwargs):
+                 add_hosts = False, name = 'Network Topology', ** kwargs):
         self.name   = name
         self.debug  = debug
         self.filename = filename
+        self.add_hosts  = add_hosts
         self.__as       = {}
         self.__routers  = {}
         self.__hosts    = {}
@@ -160,6 +161,8 @@ class JSONTopo(IPTopo):
         return des
         
     def get(self, name):
+        if isinstance(name, (list, tuple)):
+            return [self.get(n) for n in name]
         return self.__routers.get(name, self.__hosts.get(name, None))
 
     def get_routers(self, as_name = None):
@@ -173,6 +176,11 @@ class JSONTopo(IPTopo):
     def get_as_of(self, name):
         for as_name, as_config in self.__as.items():
             if name in as_config['routers'] or name in as_config['hosts']: return as_name
+        return None
+    
+    def get_subnet_of(self, name):
+        for subnet, subnet_config in self.__subnets.items():
+            if name in subnet_config.get('nodes', []): return subnet
         return None
     
     def add_bgp_fullmesh(self, niveau, rr):
@@ -203,7 +211,7 @@ class JSONTopo(IPTopo):
         if self.debug:
             print("{} and {} have different AS ({} vs {}), creating an eBGP connection with {} link".format(node, voisin, as_1, as_2, link_type))
         
-        return ebgp_session(self, node, voisin, link_type = _link_types[link_type])
+        return ebgp_session(self, node, voisin, link_type = _link_types.get(link_type, None))
     
     def add_daemons(self, router, daemons, default_daemons = []):
         if isinstance(default_daemons, list):
@@ -220,7 +228,7 @@ class JSONTopo(IPTopo):
             elif d == 'bgp':
                 if 'networks' in d_config:
                     d_config['networks'] = format_address(
-                        d_config['networks', self.__prefixes]
+                        d_config['networks'], self.__prefixes
                     )
                 
                 family = AF_INET6(** d_config)
@@ -228,17 +236,60 @@ class JSONTopo(IPTopo):
             
         return True
     
+    def add_link(self, node, voisin, link_type = 'share', ** kwargs):
+        as_1 = self.get_as_of(node)
+        as_2 = self.get_as_of(voisin)
+        
+        node = self.get(node)
+        voisin = self.get(voisin)
+        
+        if self.debug:
+            print("Adding link between {} and {} with config : {}".format(node, voisin, kwargs))
+                
+        link = self.addLink(node, voisin, ** kwargs)
+        
+        if as_1 != as_2:
+            self.add_ebgp_session(node, voisin, as_1, as_2, link_type)
+            
+        return link
+    
+    def add_host_to_router(self, router, n = 1):
+        as_name = self.get_as_of(router)
+        for i in range(n):
+            h_name = 'h{}_{}'.format(i, router)[:9]
+            
+            if self.debug: print("Adding host {} to router {}".format(h_name, router))
+            
+            self.__as[as_name]['hosts'].append(h_name)
+            self.__hosts[h_name] = self.addHost(h_name)
+            
+            # Add link between router and new host
+            if router in self.__links:
+                if isinstance(self.__links[router], dict):
+                    self.__links[router].setdefault('nodes', [])
+                    self.__links[router]['nodes'].append(h_name)
+                else:
+                    self.__links[router].append(h_name)
+            else:
+                self.__links[router] = [h_name]
+            
+            subnet = self.get_subnet_of(router)
+            if subnet is not None:
+                self.__subnets[subnet]['nodes'].append(h_name)
+            
+    
     def build(self, *args, **kwargs):
         with open(self.filename, 'r', encoding = 'utf-8') as file:
             config = file.read()
         config = json.loads(config)
         
+        self.__links = config.get('links', {})
         self.__subnets = config.get('subnets', {})
         self.__prefixes = format_prefixes(config.get('subnets', {}))
         
         self._build_as(** config['AS'])
-        self._build_links(** config.get('links', {}))
-        self._build_subnets(** config.get('subnets', {}))
+        self._build_links()
+        self._build_subnets()
         
         super().build(* args, ** kwargs)
         
@@ -286,6 +337,18 @@ class JSONTopo(IPTopo):
                 self.__as[as_name]['rr'].setdefault(niv, {})
                 self.__as[as_name]['rr'][niv][r_name] = rr_config
             
+            if 'hosts' in r_config:
+                self.add_host_to_router(r_name, r_config['hosts'])
+            if self.add_hosts:
+                if isinstance(self.add_hosts, int):
+                    if len(self.__as[as_name].get('hosts', [])) < self.add_hosts:
+                        self.add_host_to_router(r_name, 1)
+                elif isinstance(self.add_hosts, str):
+                    if as_name == self.add_hosts:
+                        self.add_host_to_router(r_name, 1)
+                else:
+                    self.add_host_to_router(r_name, 1)
+                    
             self.__routers[r_name] = router
         
         self._build_rr(as_name)
@@ -315,12 +378,8 @@ class JSONTopo(IPTopo):
             self.__as[as_name]['hosts'].append(h_name)
             self.__hosts[h_name] = self.addHost(h_name, ** {** default_config, ** h_config})
             
-    def _build_links(self, ** links):
-        self.__links = links
-        for node, voisins in links.items():
-            as_1 = self.get_as_of(node)
-            node = self.get(node)
-            
+    def _build_links(self):
+        for node, voisins in self.__links.items():
             config = {}
             if isinstance(voisins, dict):
                 config = voisins
@@ -335,9 +394,6 @@ class JSONTopo(IPTopo):
                 voisin_config = {}
                 if isinstance(voisin, list):
                     voisin, voisin_config = voisin
-                
-                as_2 = self.get_as_of(voisin)
-                voisin = self.get(voisin)
                 
                 link_type = voisin_config.pop('link_type', 'share')
                 
@@ -364,17 +420,11 @@ class JSONTopo(IPTopo):
                     
                     link_kwargs['param1']['ip'] = subnet_1
                     link_kwargs['param2']['ip'] = subnet_1
-                
-                if self.debug:
-                    print("Adding link between {} and {} with config : {}".format(node, voisin, link_kwargs))
-                
-                link = self.addLink(node, voisin, ** link_kwargs)
-                
-                if as_1 != as_2:
-                    self.add_ebgp_session(node, voisin, as_1, as_2, link_type)
+
+                self.add_link(node, voisin, ** link_kwargs)
         
-    def _build_subnets(self, ** subnets):        
-        for subnet_name, subnet_config in subnets.items():
+    def _build_subnets(self):        
+        for subnet_name, subnet_config in self.__subnets.items():
             if self.debug:
                 print("Creating subnet {} with prefix :\n- IPv4 : {}\n- IPv6 : {}".format(
                     subnet_name, 
@@ -401,7 +451,8 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'topo_ovh.json', debug = True, name = 'OVH Est-Europa topology'
+        filename = 'topo_ovh.json', debug = True, name = 'OVH Est-Europa topology',
+        add_hosts = 1
     )
     net = IPNet(topo=topo)
     print(topo)
