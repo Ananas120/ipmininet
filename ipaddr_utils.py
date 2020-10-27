@@ -35,12 +35,18 @@ def format_prefixes(subnets):
         }
     }
 
-def format_address(address_config, prefixes):    
+def format_address(address_config, prefixes, is_ipv6 = None):
     addresses = []
-    if 'ipv4' in address_config:
-        addresses.append(address_config['ipv4'].format(** prefixes.get('ipv4', {})))
-    if 'ipv6' in address_config:
-        addresses.append(address_config['ipv6'].format(** prefixes.get('ipv6', {})))
+    if isinstance(address_config, str):
+        assert is_ipv6 is not None
+        if is_ipv6:
+            return address_config.format(** prefixes.get('ipv6', {}))
+        return address_config.format(** prefixes.get('ipv4', {}))
+    elif isinstance(address_config, dict):
+        if 'ipv4' in address_config:
+            addresses.append(address_config['ipv4'].format(** prefixes.get('ipv4', {})))
+        if 'ipv6' in address_config:
+            addresses.append(address_config['ipv6'].format(** prefixes.get('ipv6', {})))
     
     return addresses
 

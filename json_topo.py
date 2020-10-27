@@ -14,13 +14,20 @@ _link_types = {
     'share' : SHARE
 }
 
+def get_next_multiple(n, multiple):
+    if n % multiple == 0: return n
+    return (n // multiple + 1) * multiple
+
 class JSONTopo(IPTopo):
     def __init__(self, filename = 'topo.json', debug = False, *args,
-                 add_hosts = False, name = 'Network Topology', ** kwargs):
+                 add_hosts = False, infer_ip = False, name = 'Network Topology', 
+                 ** kwargs):
         self.name   = name
         self.debug  = debug
         self.filename = filename
         self.add_hosts  = add_hosts
+        self.infer_ip   = infer_ip
+        
         self.__as       = {}
         self.__routers  = {}
         self.__hosts    = {}
@@ -32,6 +39,7 @@ class JSONTopo(IPTopo):
             'clients' : {},     # RR_name : clients
             'ebgp' : {}         # AS : list (router - voisin)
         }
+        
         super().__init__(self, * args, ** kwargs)
     
     @property
@@ -183,6 +191,75 @@ class JSONTopo(IPTopo):
             if name in subnet_config.get('nodes', []): return subnet
         return None
     
+    def generate_ip(self, subnet, n, host_bits = 0, ipv4 = True, ipv6 = True):
+        def add_addr_to_subnet(net, first_addr, host_bits, is_ipv6):
+            sep = '.' if not is_ipv6 else ':'
+            new_mask = 32 - host_bits if not is_ipv6 else 128 - host_bits
+            
+            ip_subnet = format_address(net, self.__prefixes, is_ipv6 = is_ipv6)
+            
+            last_bits = ip_subnet.split('/')[0].split(sep)[-1]
+            if is_ipv6: last_bits = 0 if last_bits == '' else int(last_bits, 16)
+            else: last_bits = int(last_bits)
+            last_bits += first_addr
+            
+            new_ip = ip_subnet.split('/')[0].split(sep)
+            new_ip[-1] = str(last_bits)
+
+            new_ip = sep.join(new_ip) + '/' + str(new_mask)
+            
+            return new_ip
+        
+        if subnet not in self.__subnets:
+            raise ValueError("Subnet {} unknown !".format(subnet))
+        
+        self.__subnets[subnet].setdefault('nb_used_ip', 0)
+        nb_used_ip = self.__subnets[subnet]['nb_used_ip']
+        
+        first_addr = get_next_multiple(nb_used_ip, 2 ** host_bits)
+        self.__subnets[subnet]['nb_used_ip'] = first_addr + n
+        
+        new_subnet = []
+        if ipv4:
+            if 'ipv4' not in self.__subnets[subnet]:
+                print("[WARNING]\tSubnet {} has not ipv4 address !".format(subnet))
+            else:
+                new_ipv4 = add_addr_to_subnet(
+                    self.__subnets[subnet]['ipv4'], first_addr, host_bits, is_ipv6 = False
+                )
+                
+                new_subnet.append(new_ipv4)
+                
+        if ipv6:
+            if 'ipv6' not in self.__subnets[subnet]:
+                print("[WARNING]\tSubnet {} has not ipv6 address !".format(subnet))
+            else:
+                new_ipv6 = add_addr_to_subnet(
+                    self.__subnets[subnet]['ipv6'], first_addr, host_bits, is_ipv6 = True
+                )
+                if '::/' not in new_ipv6:
+                    new_ipv6 = new_ipv6.replace(':/', '::/')
+                
+                new_subnet.append(new_ipv6)
+        
+        return create_subnets(new_subnet, n = n)
+    
+    def add_fictif_host(self, as_name, r_name):
+        if isinstance(self.add_hosts, int):
+            if len(self.__as[as_name].get('hosts', [])) < self.add_hosts:
+                self.add_host_to_router(r_name, 1)
+        elif isinstance(self.add_hosts, str):
+            if as_name == self.add_hosts:
+                self.add_host_to_router(r_name, 1)
+        elif isinstance(self.add_hosts, list):
+            if as_name in self.add_hosts:
+                self.add_host_to_router(r_name, 1)
+        elif isinstance(self.add_hosts, dict):
+            if len(self.__as[as_name].get('hosts', [])) < self.add_hosts.get(as_name, 0):
+                self.add_host_to_router(r_name, 1)
+        else:
+            self.add_host_to_router(r_name, 1)
+    
     def add_bgp_fullmesh(self, niveau, rr):
         self.__bgp_sessions['fullmesh'].append(rr)
         if self.debug:
@@ -230,22 +307,45 @@ class JSONTopo(IPTopo):
                     d_config['networks'] = format_address(
                         d_config['networks'], self.__prefixes
                     )
-                
+
                 family = AF_INET6(** d_config)
                 router.addDaemon(BGP, address_families=(family,))
             
         return True
     
-    def add_link(self, node, voisin, link_type = 'share', ** kwargs):
-        as_1 = self.get_as_of(node)
-        as_2 = self.get_as_of(voisin)
+    def add_link(self, node, voisin, config_node, config_voisin, link_type = 'share', 
+                 ** kwargs):
+        as_1, as_2 = self.get_as_of(node), self.get_as_of(voisin)
+        node, voisin = self.get(node), self.get(voisin)
         
-        node = self.get(node)
-        voisin = self.get(voisin)
+        config_node = config_node.copy()
+        ip1, ip2 = config_node.pop('ip', None), config_voisin.pop('ip', None)
+        
+        if self.infer_ip and 'subnet' not in config_voisin and ip1 is None and ip2 is None:
+            node_subnet = self.get_subnet_of(node)
+            if node_subnet is not None:
+                config_voisin['subnet'] = self.generate_ip(
+                    node_subnet, n = 2, host_bits = 1, ipv4 = True, ipv6 = True
+                )
+            
+        if 'subnet' in config_voisin:
+            subnet = config_voisin.pop('subnet')
+            if isinstance(subnet, dict):
+                subnet = format_address(subnet, self.__prefixes)
+            ip1, ip2 = subnet
+        
+        kwargs = {** config_node, ** config_voisin}
+        if ip1 is not None:
+            kwargs.setdefault('params1', {})
+            kwargs['params1']['ip'] = ip1
+        if ip2 is not None:
+            kwargs.setdefault('params2', {})
+            kwargs['params2']['ip'] = ip2
+            
         
         if self.debug:
             print("Adding link between {} and {} with config : {}".format(node, voisin, kwargs))
-                
+        
         link = self.addLink(node, voisin, ** kwargs)
         
         if as_1 != as_2:
@@ -256,7 +356,7 @@ class JSONTopo(IPTopo):
     def add_host_to_router(self, router, n = 1):
         as_name = self.get_as_of(router)
         for i in range(n):
-            h_name = 'h{}_{}'.format(i, router)[:9]
+            h_name = 'h{}_{}'.format(len(self.__as[as_name]['hosts']), as_name)[:9]
             
             if self.debug: print("Adding host {} to router {}".format(h_name, router))
             
@@ -312,10 +412,7 @@ class JSONTopo(IPTopo):
 
         for r_name, r_config in routers.items():
             self.__as[as_name]['routers'].append(r_name)
-            
-            if self.debug:
-                print("Adding router {} to AS {}".format(r_name, as_name))
-                        
+                                    
             r_config = {** default_config, ** r_config}
             if 'lo_addresses' in r_config:
                 # option lo_addresses = [IPV6_ADDRESS, IPV4_ADDRESS] to set the loopback address of the router
@@ -323,34 +420,37 @@ class JSONTopo(IPTopo):
                 r_config['lo_addresses'] = format_address(
                     r_config['lo_addresses'], self.__prefixes
                 )
+            elif self.infer_ip:
+                r_subnet = self.get_subnet_of(r_name)
+                if r_subnet is not None:
+                    r_config['lo_addresses'] = self.generate_ip(
+                        r_subnet, 1, host_bits = 0, ipv4 = True, ipv6 = True
+                    )[0]
+            
+            if self.debug:
+                print("Adding router {} to AS {}".format(r_name, as_name))
             
             r_kwargs = {k : v for k, v in r_config.items() if k in ('lo_addresses', )}
             router = self.addRouter(r_name, config = RouterConfig, ** r_kwargs)
             self.add_daemons(router, r_config.get('daemons', []), default_daemons)
             
-            if 'clients' in r_config:
-                niv = r_config.get('niveau', '1')
+            self.__routers[r_name] = router
+            
+            if 'clients' in r_config or 'peers' in r_config:
+                niv = r_config.get('niveau', 1)
                 rr_config = {'niveau' : niv}
                 if 'clients' in r_config: rr_config['clients'] = r_config['clients']
                 if 'peers' in r_config: rr_config['peers'] = r_config['peers']
-                    
+                
                 self.__as[as_name]['rr'].setdefault(niv, {})
                 self.__as[as_name]['rr'][niv][r_name] = rr_config
             
             if 'hosts' in r_config:
                 self.add_host_to_router(r_name, r_config['hosts'])
+            
             if self.add_hosts:
-                if isinstance(self.add_hosts, int):
-                    if len(self.__as[as_name].get('hosts', [])) < self.add_hosts:
-                        self.add_host_to_router(r_name, 1)
-                elif isinstance(self.add_hosts, str):
-                    if as_name == self.add_hosts:
-                        self.add_host_to_router(r_name, 1)
-                else:
-                    self.add_host_to_router(r_name, 1)
-                    
-            self.__routers[r_name] = router
-        
+                self.add_fictif_host(as_name, r_name)
+                            
         self._build_rr(as_name)
         
     def _build_rr(self, as_name):
@@ -385,11 +485,7 @@ class JSONTopo(IPTopo):
                 config = voisins
                 voisins = config.pop('voisins', [])
             if not isinstance(voisins, (list, tuple)): voisins = [voisins]
-            
-            ip1 = None
-            if 'ip' in config:
-                ip1 = format_address(config.pop('ip'), self.__prefixes)
-            
+                        
             for voisin in voisins:
                 voisin_config = {}
                 if isinstance(voisin, list):
@@ -397,31 +493,7 @@ class JSONTopo(IPTopo):
                 
                 link_type = voisin_config.pop('link_type', 'share')
                 
-                ip2 = None
-                if 'ip' in voisin_config:
-                    ip2 = format_address(
-                        voisin_config.pop('ip'), self.__prefixes
-                    )
-                
-                link_kwargs = {** config, ** voisin_config}
-                if ip1:
-                    link_kwargs.setdefault('param1', {})
-                    link_kwargs['param1']['ip'] = ip1
-                if ip2:
-                    link_kwargs.setdefault('param2', {})
-                    link_kwargs['param2']['i2'] = ip2
-                if 'subnet' in link_kwargs:
-                    link_kwargs.setdefault('param1', {})
-                    link_kwargs.setdefault('param2', {})
-                    
-                    subnet = link_kwargs.pop('subnet')
-                    subnet = _parse_address(subnet, self.__prefixes)
-                    subnet_1, subnet_2 = create_subnets(subnet)
-                    
-                    link_kwargs['param1']['ip'] = subnet_1
-                    link_kwargs['param2']['ip'] = subnet_1
-
-                self.add_link(node, voisin, ** link_kwargs)
+                self.add_link(node, voisin, config, voisin_config, link_type)
         
     def _build_subnets(self):        
         for subnet_name, subnet_config in self.__subnets.items():
@@ -452,9 +524,9 @@ if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
         filename = 'topo_ovh.json', debug = True, name = 'OVH Est-Europa topology',
-        add_hosts = 1
+        add_hosts = ['UPC', 'OVH'], infer_ip = False
     )
-    net = IPNet(topo=topo)
+    net = IPNet(topo=topo, allocate_IPs = True)
     print(topo)
     try:
         net.start()
