@@ -523,8 +523,8 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'topo_ovh.json', debug = True, name = 'OVH Est-Europa topology',
-        add_hosts = ['UPC', 'OVH'], infer_ip = False
+        filename = 'topo_test.json', debug = True, name = 'OVH Est-Europa topology',
+        add_hosts = False, infer_ip = False
     )
     net = IPNet(topo=topo, allocate_IPs = True)
     print(topo)
