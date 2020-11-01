@@ -1,32 +1,36 @@
 {
-    "subnets" : {
-    },
+    "subnets" : {},
     "AS" : {
         "AS1" : {
             "routers" : {
-                "as1_s1" : {}
+                "as1_r1" : {"clients" : ["as1_r2", "as1_r3"]},
+                "as1_r2" : {"clients" : ["as1_r4"], "niveau" : 2, "peers" : ["as1_r3"]},
+                "as1_r3" : {"clients" : ["as1_r5"], "niveau" : 2},
+                "as1_r4" : {},
+                "as1_r5" : {}
             },
             "hosts" : {
-                "as1_h1" : {}
             },
             "rconfig" : {
-                "daemons" : ["bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         },
         "AS2" : {
             "routers" : {
-                "as2_cl1" : {}
+                "as2_r1" : {"clients" : ["as2_r2"]},
+                "as2_r2" : {}
             },
             "hosts" : {
-                "as2_h2" : {}
             },
             "rconfig" : {
-                "daemons" : ["bgp"]
+                "daemons" : ["ospf", "ospf6", "bgp"]
             }
         }
     },
     "links" : {
-        "as1_s1" : ["as2_cl1", "as1_h1"],
-        "as2_h2" : ["as2_cl1"]
+        "as1_r2" : ["as1_r4"],
+        "as1_r3" : ["as1_r5"],
+        "as1_r1" : ["as2_r1", "as1_r2", "as1_r3"],
+        "as2_r2" : ["as2_r1"]
     }
 }

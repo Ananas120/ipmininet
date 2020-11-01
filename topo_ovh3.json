@@ -1,0 +1,107 @@
+{
+    "subnets" : {},
+    "AS" : {
+        "OVH" : {
+            "routers" : {
+                "milan" : {
+                    "clients" : ["zurich"],
+                    "peers" : ["sbg-g2"],
+                    "niveau" : 2
+                 },
+                "zurich": {},
+                "sbg-g1" : {
+                    "clients" : ["milan"]
+                },
+                "sbg-g2": {
+                    "clients" : ["zurich"],
+                    "niveau" : 2
+                },
+                "par-gsw": {
+                    "clients" : ["sbg-g1", "sbg-g2"]
+                },
+                "par-thz" : {
+                    "peers" : ["sbg-g1"],
+                    "niveau" : 2
+                }
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "Telia" : {
+            "routers" : {
+                "telia_mil" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "UPC" : {
+            "routers" : {
+                "upc_zrh" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "Seabone" : {
+            "routers" : {
+                "sea_mil" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "level3" : {
+            "routers" : {
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "google" : {
+            "routers" : {
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "cogent" : {
+            "routers" : {
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "amazon" : {
+            "routers" : {
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        },
+        "core-backbone" : {
+            "routers" : {
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            }
+        }
+    },
+    "links" : {
+        "milan"    : [
+            "sea_mil",
+            "telia_mil",
+            
+            "zurich",
+            ["sbg-g1", {"igp_metric": 3}], 
+            ["sbg-g2", {"igp_metric": 3}]
+        ],
+        "zurich"   : ["sbg-g1"],
+        "sbg-g1"   : ["sbg-g2"],
+        "sbg-g2"   : ["zurich"],
+        "upc_zrh"  : ["zurich"],
+        "par-gsw"  : ["par-thz", "sbg-g2"],
+        "par-thz"  : ["sbg-g1"]
+    }
+}

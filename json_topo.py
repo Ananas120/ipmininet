@@ -6,7 +6,7 @@ import itertools
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
 
 from ipaddr_utils import format_prefixes, format_address, create_subnets
 
@@ -165,7 +165,7 @@ class JSONTopo(IPTopo):
     
     def describe_ebgp(self):
         des = "Description of eBGP sessions :\n"
-        des += "- Number of iBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
+        des += "- Number of eBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
         return des
         
     def get(self, name):
@@ -175,11 +175,11 @@ class JSONTopo(IPTopo):
 
     def get_routers(self, as_name = None):
         if as_name is None: return list(self.__routers.values())
-        return [self.__routers[r_name] for r_name in self.__as[as_name]['routers']]
+        return self.get(self.__as[as_name]['routers'])
         
     def get_hosts(self, as_name = None):
         if as_name is None: return list(self.__hosts.values())
-        return [self.__hosts[r_name] for r_name in self.__as[as_name]['hosts']]
+        return self.get(self.__as[as_name]['hosts'])
     
     def get_as_of(self, name):
         for as_name, as_config in self.__as.items():
@@ -191,7 +191,7 @@ class JSONTopo(IPTopo):
             if name in subnet_config.get('nodes', []): return subnet
         return None
     
-    def generate_ip(self, subnet, n, host_bits = 0, ipv4 = True, ipv6 = True):
+    def generate_ip(self, name, n = 1, host_bits = 0, ipv4 = True, ipv6 = True):
         def add_addr_to_subnet(net, first_addr, host_bits, is_ipv6):
             sep = '.' if not is_ipv6 else ':'
             new_mask = 32 - host_bits if not is_ipv6 else 128 - host_bits
@@ -210,10 +210,11 @@ class JSONTopo(IPTopo):
             
             return new_ip
         
-        if subnet not in self.__subnets:
-            raise ValueError("Subnet {} unknown !".format(subnet))
+        subnet = self.get_subnet_of(name)
         
-        self.__subnets[subnet].setdefault('nb_used_ip', 0)
+        if subnet is None: return None
+        
+        self.__subnets[subnet].setdefault('nb_used_ip', 1)
         nb_used_ip = self.__subnets[subnet]['nb_used_ip']
         
         first_addr = get_next_multiple(nb_used_ip, 2 ** host_bits)
@@ -242,7 +243,8 @@ class JSONTopo(IPTopo):
                 
                 new_subnet.append(new_ipv6)
         
-        return create_subnets(new_subnet, n = n)
+        subnets = create_subnets(new_subnet, n = n)
+        return subnets if len(subnets) > 1 else subnets[0]
     
     def add_fictif_host(self, as_name, r_name):
         if isinstance(self.add_hosts, int):
@@ -288,7 +290,7 @@ class JSONTopo(IPTopo):
         if self.debug:
             print("{} and {} have different AS ({} vs {}), creating an eBGP connection with {} link".format(node, voisin, as_1, as_2, link_type))
         
-        return ebgp_session(self, node, voisin, link_type = _link_types.get(link_type, None))
+        return ebgp_session(self, node, voisin, link_type = None) #_link_types.get(link_type, None))
     
     def add_daemons(self, router, daemons, default_daemons = []):
         if isinstance(default_daemons, list):
@@ -308,8 +310,11 @@ class JSONTopo(IPTopo):
                         d_config['networks'], self.__prefixes
                     )
 
-                family = AF_INET6(** d_config)
-                router.addDaemon(BGP, address_families=(family,))
+                families = (
+                    AF_INET(redistribute=('connected',)),
+                    AF_INET6(redistribute=('connected',))
+                )
+                router.addDaemon(BGP, address_families=families)
             
         return True
     
@@ -319,15 +324,15 @@ class JSONTopo(IPTopo):
         node, voisin = self.get(node), self.get(voisin)
         
         config_node = config_node.copy()
+        
         ip1, ip2 = config_node.pop('ip', None), config_voisin.pop('ip', None)
         
-        if self.infer_ip and 'subnet' not in config_voisin and ip1 is None and ip2 is None:
-            node_subnet = self.get_subnet_of(node)
-            if node_subnet is not None:
-                config_voisin['subnet'] = self.generate_ip(
-                    node_subnet, n = 2, host_bits = 1, ipv4 = True, ipv6 = True
-                )
-            
+        if self.infer_ip and ip1 is None and 'subnet' not in config_voisin:
+            ip1 = self.generate_ip(node)
+        
+        if self.infer_ip and ip2 is None and 'subnet' not in config_voisin:
+            ip2 = self.generate_ip(voisin)
+                        
         if 'subnet' in config_voisin:
             subnet = config_voisin.pop('subnet')
             if isinstance(subnet, dict):
@@ -356,7 +361,7 @@ class JSONTopo(IPTopo):
     def add_host_to_router(self, router, n = 1):
         as_name = self.get_as_of(router)
         for i in range(n):
-            h_name = 'h{}_{}'.format(len(self.__as[as_name]['hosts']), as_name)[:9]
+            h_name = '{}_{}'.format(router, i)[-9:]
             
             if self.debug: print("Adding host {} to router {}".format(h_name, router))
             
@@ -405,7 +410,7 @@ class JSONTopo(IPTopo):
                 as_name, as_config.get('hosts', {}), ** as_config.get('hconfig', {})
             )
             
-            self.addAS(i, self.get_routers(as_name))
+            self.addAS(i+1, self.get_routers(as_name))
         
     def _build_routers(self, as_name, routers, ** default_config):
         default_daemons = default_config.pop('daemons', [])
@@ -421,16 +426,16 @@ class JSONTopo(IPTopo):
                     r_config['lo_addresses'], self.__prefixes
                 )
             elif self.infer_ip:
-                r_subnet = self.get_subnet_of(r_name)
-                if r_subnet is not None:
-                    r_config['lo_addresses'] = self.generate_ip(
-                        r_subnet, 1, host_bits = 0, ipv4 = True, ipv6 = True
-                    )[0]
+                lo_addr = self.generate_ip(r_name, ipv4 = True, ipv6 = True)
+                if lo_addr is not None:
+                    r_config['lo_addresses'] = lo_addr
             
-            if self.debug:
-                print("Adding router {} to AS {}".format(r_name, as_name))
             
             r_kwargs = {k : v for k, v in r_config.items() if k in ('lo_addresses', )}
+            
+            if self.debug:
+                print("Adding router {} to AS {} with config {}".format(r_name, as_name, r_kwargs))
+            
             router = self.addRouter(r_name, config = RouterConfig, ** r_kwargs)
             self.add_daemons(router, r_config.get('daemons', []), default_daemons)
             
@@ -523,8 +528,8 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'topo_test.json', debug = True, name = 'OVH Est-Europa topology',
-        add_hosts = False, infer_ip = False
+        filename = 'topo_ovh_new.json', debug = True, name = 'OVH Est-Europa topology',
+        add_hosts = 50, infer_ip = True
     )
     net = IPNet(topo=topo, allocate_IPs = True)
     print(topo)
