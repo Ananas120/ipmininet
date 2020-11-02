@@ -101,20 +101,20 @@
         "OVH" : {
             "routers" : {
                 "milan" : {
-                    "clients" : ["zurich", "sbg-g1", "sbg-g2"],
-                    "peers" : ["par-gsw"],
+                    "clients" : ["zurich", "sbg-g2"],
+                    "peers" : ["sbg-g1"],
                     "niveau" : 2
                  },
                 "zurich": {},
-                "sbg-g1" : {},
+                "sbg-g1" : {
+                    "clients" : ["sbg-g2", "par-gsw", "zurich"],
+                    "niveau" : 2
+                },
                 "sbg-g2": {},
                 "par-th2": {
                     "clients" : ["par-gsw", "sbg-g1", "rbx-g1", "rbx-g2", "ams-5"]
                 },
-                "par-gsw" : {
-                    "clients" : ["rbx-g2", "sbg-g2"],
-                    "niveau" : 2
-                },
+                "par-gsw" : {},
                 "rbx-g2" : {},
                 "rbx-g1" : {},
                 "fra-5_fr5": {
@@ -122,7 +122,7 @@
                 },
                 "ams-5" : {
                     "peers" : ["varsovie", "vienne"],
-                    "clients" : ["ams-1", "rbx-g2", "fra-1_fr5"],
+                    "clients" : ["ams-1", "rbx-g2", "rbx-g1", "fra-1_fr5"],
                     "niveau" : 2
                 },
                 "varsovie": {
@@ -235,7 +235,7 @@
             ["fra-1_fr5", {"igp_metric" : 2}]
         ],
         "sbg-g2"   : [
-            "par-gsw",
+            ["par-gsw", {"igp_metric" : 2}],
             ["fra-5_fr5", {"igp_metric": 2}]
         ],
         "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],
@@ -254,10 +254,10 @@
         ],
         "fra-1_fr5": {
             "igp_metric" : 2,
-            "voisins" : ["ams-1", "rbx-g1", "vienne"]
+            "voisins" : ["ams-1", "rbx-g1"]
         },
         "varsovie" : {
-            "igp_metric" : 2,
+            "igp_metric" : 4,
             "voisins" : ["fra-5_fr5", "prague", "ams-1"]
         },
         "prague"   : ["vienne"],
