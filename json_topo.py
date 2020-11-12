@@ -6,7 +6,7 @@ import itertools
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList
 
 from ipaddr_utils import format_prefixes, format_address, create_subnets
 
@@ -39,6 +39,7 @@ class JSONTopo(IPTopo):
             'clients' : {},     # RR_name : clients
             'ebgp' : {}         # AS : list (router - voisin)
         }
+        self.__communities = {}
         
         super().__init__(self, * args, ** kwargs)
     
@@ -309,6 +310,8 @@ class JSONTopo(IPTopo):
                     d_config['networks'] = format_address(
                         d_config['networks'], self.__prefixes
                     )
+                if 'communities' in d_config:
+                    self.__communities[router] = d_config["communities"]
 
                 families = (
                     AF_INET(redistribute=('connected',)),
@@ -317,7 +320,7 @@ class JSONTopo(IPTopo):
                 router.addDaemon(BGP, address_families=families)
             
         return True
-    
+
     def add_link(self, node, voisin, config_node, config_voisin, link_type = 'share', 
                  ** kwargs):
         as_1, as_2 = self.get_as_of(node), self.get_as_of(voisin)
@@ -393,10 +396,31 @@ class JSONTopo(IPTopo):
         self.__prefixes = format_prefixes(config.get('subnets', {}))
         
         self._build_as(** config['AS'])
+        self._build_bgp_communities()
         self._build_links()
         self._build_subnets()
         
         super().build(* args, ** kwargs)
+    
+    def _build_bgp_communities(self):
+        for router in self.__communities:
+            communities_config = self.__communities[router]
+
+            #Problem with IPMininet
+            #if "set_local_pref" in communities_config:
+             #   for community_value in communities_config["set_local_pref"]:
+                    #print(community_value)
+                    #local_pref = communities_config["set_local_pref"][community_value]
+                    #community = CommunityList(community_value)
+                    #for x in self.__routers:
+                        #print("{} Je set le local from {}".format(router,x))
+                        #router.get_config(BGP).set_local_pref(local_pref,from_peer=None, matching=(community,))
+
+            if "send_community" in communities_config:
+                for community_value in communities_config["send_community"]:
+                    all_al = AccessList('all', ('any',))
+                    for router_y in self.__routers:
+                        router.get_config(BGP).set_community(community_value, to_peer=router_y, matching=(all_al,))
         
     def _build_as(self, * args, ** ases):
         for i, (as_name, as_config) in enumerate(ases.items()):
@@ -528,7 +552,7 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'topo_ovh_new.json', debug = True, name = 'OVH Est-Europa topology',
+        filename = 'topo_test.json', debug = True, name = 'OVH Est-Europa topology',
         add_hosts = 50, infer_ip = True
     )
     net = IPNet(topo=topo, allocate_IPs = True)
