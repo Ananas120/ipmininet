@@ -19,17 +19,23 @@ def get_next_multiple(n, multiple):
     return (n // multiple + 1) * multiple
 
 class JSONTopo(IPTopo):
-    def __init__(self, filename = 'topo.json', debug = False, *args,
-                 add_hosts = False, infer_ip = False, name = 'Network Topology', 
-                 ** kwargs):
+    def __init__(self, filename, *args,
+                 add_hosts = False,
+                 infer_ip = False, infer_ip_lo = False, infer_ip_link = False,
+                 name = 'Network Topology', debug = False,
+                 ** kwargs
+                ):
         self.name   = name
         self.debug  = debug
         self.filename = filename
         self.add_hosts  = add_hosts
-        self.infer_ip   = infer_ip
-        
+        self.infer_ip_lo    = infer_ip_lo or infer_ip
+        self.infer_ip_link  = infer_ip_link or infer_ip
+
         self.__as       = {}
         self.__routers  = {}
+        self.__anycast  = {}
+        self.__anycast_servers  = {}
         self.__hosts    = {}
         self.__links    = {}
         self.__subnets  = {}
@@ -124,6 +130,7 @@ class JSONTopo(IPTopo):
         des += self.describe() + '\n'
         des += self.describe_ibpg() + '\n'
         des += self.describe_ebgp() + '\n'
+        des += self.describe_anycast() + '\n'
         return des
     
     def describe(self):
@@ -169,14 +176,34 @@ class JSONTopo(IPTopo):
         des += "- Number of eBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
         return des
         
+    def describe_anycast(self):
+        if len(self.__anycast) == 0: return ''
+        
+        des = "Description of Anycast servers :\n"
+        des += "- Number of Anycast addresses : {}\n".format(len(self.__anycast))
+        
+        for anycast_addr, nodes in self.__anycast.items():
+            des += "-- Servers for anycast address {} :\n".format(anycast_addr)
+            for router, server in nodes:
+                des += "--- Server {} connected to {}\n".format(server, router)
+                
+        return des
+        
     def get(self, name):
         if isinstance(name, (list, tuple)):
             return [self.get(n) for n in name]
-        return self.__routers.get(name, self.__hosts.get(name, None))
+        return self.__routers.get(
+            name, self.__hosts.get(
+                name, self.__anycast_servers.get(
+                    name, None)))
 
     def get_routers(self, as_name = None):
         if as_name is None: return list(self.__routers.values())
         return self.get(self.__as[as_name]['routers'])
+        
+    def get_anycast_servers(self, as_name = None):
+        if as_name is None: return list(self.__anycast_servers.values())
+        return self.get(list(self.__as[as_name]['anycast_servers'].keys()))
         
     def get_hosts(self, as_name = None):
         if as_name is None: return list(self.__hosts.values())
@@ -184,7 +211,8 @@ class JSONTopo(IPTopo):
     
     def get_as_of(self, name):
         for as_name, as_config in self.__as.items():
-            if name in as_config['routers'] or name in as_config['hosts']: return as_name
+            if name in as_config['routers'] or name in as_config['hosts'] or name in as_config['anycast_servers']:
+                return as_name
         return None
     
     def get_subnet_of(self, name):
@@ -246,9 +274,21 @@ class JSONTopo(IPTopo):
         
         subnets = create_subnets(new_subnet, n = n)
         return subnets if len(subnets) > 1 else subnets[0]
-    
+            
+    def add_new_link(self, r1, r2):
+        if r1 in self.__links:
+            if isinstance(self.__links[r1], dict):
+                self.__links[r1].setdefault('nodes', [])
+                self.__links[r1]['nodes'].append(r2)
+            else:
+                self.__links[r1].append(r2)
+        else:
+            self.__links[r1] = [r2]
+        
     def add_fictif_host(self, as_name, r_name):
-        if isinstance(self.add_hosts, int):
+        if isinstance(self.add_hosts, bool):
+            self.add_host_to_router(r_name, 1)
+        elif isinstance(self.add_hosts, int):
             if len(self.__as[as_name].get('hosts', [])) < self.add_hosts:
                 self.add_host_to_router(r_name, 1)
         elif isinstance(self.add_hosts, str):
@@ -329,18 +369,14 @@ class JSONTopo(IPTopo):
         config_node = config_node.copy()
         
         ip1, ip2 = config_node.pop('ip', None), config_voisin.pop('ip', None)
-        
-        if self.infer_ip and ip1 is None and 'subnet' not in config_voisin:
-            ip1 = self.generate_ip(node)
-        
-        if self.infer_ip and ip2 is None and 'subnet' not in config_voisin:
-            ip2 = self.generate_ip(voisin)
-                        
+                                
         if 'subnet' in config_voisin:
             subnet = config_voisin.pop('subnet')
             if isinstance(subnet, dict):
                 subnet = format_address(subnet, self.__prefixes)
             ip1, ip2 = subnet
+        elif self.infer_ip_link:
+            ip1, ip2 = self.generate_ip(node, 2, 1)
         
         kwargs = {** config_node, ** config_voisin}
         if ip1 is not None:
@@ -372,14 +408,7 @@ class JSONTopo(IPTopo):
             self.__hosts[h_name] = self.addHost(h_name)
             
             # Add link between router and new host
-            if router in self.__links:
-                if isinstance(self.__links[router], dict):
-                    self.__links[router].setdefault('nodes', [])
-                    self.__links[router]['nodes'].append(h_name)
-                else:
-                    self.__links[router].append(h_name)
-            else:
-                self.__links[router] = [h_name]
+            self.add_new_link(router, h_name)
             
             subnet = self.get_subnet_of(router)
             if subnet is not None:
@@ -398,7 +427,6 @@ class JSONTopo(IPTopo):
         self._build_as(** config['AS'])
         self._build_bgp_communities()
         self._build_links()
-        self._build_subnets()
         
         super().build(* args, ** kwargs)
     
@@ -424,9 +452,15 @@ class JSONTopo(IPTopo):
         
     def _build_as(self, * args, ** ases):
         for i, (as_name, as_config) in enumerate(ases.items()):
-            if self.debug: print("Creating new AS : {}".format(as_name))
-            self.__as[as_name] = {'routers' : [], 'hosts' : [], 'rr' : {}}
+            asn = as_config.get('ASN', i+1)
+            if self.debug: print("Creating new AS : {} (ASN = {})".format(as_name, asn))
+            self.__as[as_name] = {
+                'routers' : [], 'hosts' : [], 'rr' : {}, 'anycast_servers' : {}
+            }
 
+            self._build_anycast_servers(
+                as_name, as_config.get('anycast', []), as_config.get('routers', {})
+            )
             self._build_routers(
                 as_name, as_config.get('routers', {}), ** as_config.get('rconfig', {})
             )
@@ -434,7 +468,12 @@ class JSONTopo(IPTopo):
                 as_name, as_config.get('hosts', {}), ** as_config.get('hconfig', {})
             )
             
-            self.addAS(i+1, self.get_routers(as_name))
+            if as_config.get('linked', False):
+                for (r1, r2) in itertools.combinations(self.get_routers(as_name), 2):
+                    self.add_new_link(r1, r2)
+
+            
+            self.addAS(asn, self.get_routers(as_name) + self.get_anycast_servers(as_name))
         
     def _build_routers(self, as_name, routers, ** default_config):
         default_daemons = default_config.pop('daemons', [])
@@ -449,7 +488,7 @@ class JSONTopo(IPTopo):
                 r_config['lo_addresses'] = format_address(
                     r_config['lo_addresses'], self.__prefixes
                 )
-            elif self.infer_ip:
+            elif self.infer_ip_lo:
                 lo_addr = self.generate_ip(r_name, ipv4 = True, ipv6 = True)
                 if lo_addr is not None:
                     r_config['lo_addresses'] = lo_addr
@@ -489,7 +528,7 @@ class JSONTopo(IPTopo):
                 print("Adding RR of level {} :".format(niveau))
             
             for i, (rr_name, rr_config) in enumerate(rr.items()):
-                clients = [self.__routers[r_name] for r_name in rr_config.get('clients', [])]
+                clients = self.get(rr_config.get('clients', []))
 
                 self.add_bgp_clients(rr_name, clients)
                 
@@ -500,6 +539,50 @@ class JSONTopo(IPTopo):
             if niveau == 1:
                 self.add_bgp_fullmesh(niveau, list(rr.keys()))
         
+        
+    def _build_anycast_servers(self, as_name, anycast, as_routers):
+        rr_levels = []
+        for r_name, r_config in as_routers.items():
+            rr_levels.append(r_config.get('niveau', 1) if 'clients' in r_config or 'peers' in r_config else 0)
+        anycast_rr_level = max(rr_levels) + 1
+        
+        for anycast_config in anycast:
+            anycast_address = anycast_config['addresses']
+            anycast_address = tuple(format_address(anycast_address, self.__prefixes))
+            
+            self.__anycast.setdefault(anycast_address, [])
+            
+            if self.debug:
+                print("Adding anycast address : {}".format(anycast_address))
+            
+            for node in anycast_config.get('nodes', []):
+                server_name = 'server_{}'.format(len(self.__anycast_servers) + 1)
+                self.__as[as_name]['anycast_servers'][server_name] = anycast_address
+                self.__anycast[anycast_address].append((node, server_name))
+                
+                s_config = {'lo_addresses' : anycast_address}
+            
+                if self.debug:
+                    print("Adding server {} to this anycast address".format(server_name))
+            
+                server = self.addRouter(server_name, config = RouterConfig, ** s_config)
+                self.add_daemons(
+                    server, {'bgp' : anycast_config.get('bgp_config', {})}, {}
+                )
+
+                self.__anycast_servers[server_name] = server
+                
+                self.add_new_link(server_name, node)
+                
+                # Add the node to the clients of the router
+                if 'clients' not in as_routers[node] and 'peers' not in as_routers[node]:
+                    as_routers[node].setdefault('niveau', anycast_rr_level)
+                as_routers[node].setdefault('clients', [])
+                as_routers[node]['clients'].append(server_name)
+            
+                subnet = self.get_subnet_of(node)
+                if subnet is not None:
+                    self.__subnets[subnet]['nodes'].append(server_name)
         
     def _build_hosts(self, as_name, hosts, ** default_config):
         for h_name, h_config in hosts.items():
@@ -524,26 +607,6 @@ class JSONTopo(IPTopo):
                 
                 self.add_link(node, voisin, config, voisin_config, link_type)
         
-    def _build_subnets(self):        
-        for subnet_name, subnet_config in self.__subnets.items():
-            if self.debug:
-                print("Creating subnet {} with prefix :\n- IPv4 : {}\n- IPv6 : {}".format(
-                    subnet_name, 
-                    subnet_config.get('ipv4', None), 
-                    subnet_config.get('ipv6', None)
-                ))
-            
-            addresses = format_address(subnet_config, self.__prefixes)
-            
-            nodes = [self.get(node_name) for node_name in subnet_config.get('nodes', [])]
-            
-            if len(nodes) > 0:
-                if self.debug:
-                    print("Adding nodes {} to subnet".format(nodes))
-                self.addSubnet(nodes, subnets = addresses)
-            elif self.debug:
-                print("No node attached to this subnet")
-
     def __getattr__(self, item):
         if not item.startswith('add'):
             return self.__getattribute__(item)
@@ -552,8 +615,8 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'topo_test.json', debug = True, name = 'OVH Est-Europa topology',
-        add_hosts = 50, infer_ip = True
+        filename = 'topo_ovh.json', debug = True, name = 'OVH East-Europa topology',
+        add_hosts = True, infer_ip = True
     )
     net = IPNet(topo=topo, allocate_IPs = True)
     print(topo)
