@@ -44,6 +44,8 @@ from .dns_advanced_network import DNSAdvancedNetwork
 from .srv6 import SRv6Topo
 from .tc_network import TCNet
 from .tc_advanced_network import TCAdvancedNet
+from .link_failure import FailureTopo
+from .exabgp_prefix_injector import ExaBGPTopoInjectPrefixes
 
 from mininet.log import lg, LEVELS
 
@@ -85,7 +87,9 @@ TOPOS = {'simple_ospf_network': SimpleOSPFNet,
          'dns_advanced_network': DNSAdvancedNetwork,
          'ipv6_segment_routing': SRv6Topo,
          'tc_network': TCNet,
-         'tc_advanced_network': TCAdvancedNet}
+         'tc_advanced_network': TCAdvancedNet,
+         'exabgp_prefix_injector': ExaBGPTopoInjectPrefixes,
+         'failure': FailureTopo}
 
 NET_ARGS = {'router_adv_network':  {'use_v4': False,
                                     'use_v6': True,

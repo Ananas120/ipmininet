@@ -167,7 +167,7 @@ class OpenrDaemon(RouterDaemon):
         :param redistribute_ifaces: Comma separated list of interface names
             whose '/32' (for v4) and '/128' (for v6) should be announced. OpenR
             will monitor address add/remove activity on this interface and
-            announce it to rest of the network. Default: "lo1".
+            announce it to rest of the network. Default: "lo".
         :param seed_prefix: In order to elect a prefix for the node a super
             prefix to elect from is required. This is only applicable when
             'ENABLE_PREFIX_ALLOC' is set to true. Default: "".
@@ -232,10 +232,10 @@ class OpenrDaemon(RouterDaemon):
         """The OpenR daemon has currently no option to read config from
         configuration file itself. The run_openr.sh script can be used to read
         options from environment files. However, we want to run the daemon
-        directly.  The default options from the shell script are implemented in
+        directly. The default options from the shell script are implemented in
         the openr.mako template and passed to the daemon as argument."""
         cfg = ConfigDict()
-        cfg[self.NAME] = self.build()
+        cfg[self.NAME] = self.options
         return self.template_lookup.get_template(self.template_filenames[0])\
                                    .render(node=cfg)
 

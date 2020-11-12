@@ -26,50 +26,63 @@ router bgp ${node.bgpd.asn}
 % for af in node.bgpd.address_families:
     address-family ${af.name}
     % for rm in node.bgpd.route_maps:
-        % if rm.neighbor.family == af.name and rm.order == 10:
-    neighbor ${rm.neighbor.peer} route-map ${rm.name}-${af.name} ${rm.direction}
+        % if rm.neighbor.family == af.name and rm.order == 10 and rm.family == af.name:
+        neighbor ${rm.neighbor.peer} route-map ${rm.name} ${rm.direction}
         % endif
     % endfor
     % for net in af.networks:
-    network ${net.with_prefixlen}
+        network ${net.with_prefixlen}
     % endfor
     % for r in af.redistribute:
-    redistribute ${r}
+        redistribute ${r}
     % endfor
     % for n in af.neighbors:
         % if n.family == af.name:
-    neighbor ${n.peer} activate
+        neighbor ${n.peer} activate
             % if n.nh_self:
-    neighbor ${n.peer} ${n.nh_self}
+        neighbor ${n.peer} ${n.nh_self}
             % endif
             % if node.bgpd.rr and n.asn == node.bgpd.asn:
-    neighbor ${n.peer} route-reflector-client
+        neighbor ${n.peer} route-reflector-client
             % endif
         % endif
     % endfor
     % if node.bgpd.rr:
     bgp cluster-id ${node.bgpd.routerid}
     % endif
+    exit-address-family
+    !
 % endfor
-
+!
 % for al in node.bgpd.access_lists:
     % for e in al.entries:
-ip access-list ${al.name} ${e.action} ${e.prefix}
+${al.zebra_family}access-list ${al.name} ${e.action} ${e.prefix}
     % endfor
 % endfor
 
 % for cl in node.bgpd.community_lists:
-ip community-list standard ${cl.name} ${cl.action} ${cl.community}
+bgp community-list standard ${cl.name} ${cl.action} ${cl.community}
 % endfor
 
+% for pl in node.bgpd.prefix_lists:
+    %for e in pl.entries:
+${pl.zebra_family} prefix-list ${pl.name} ${e.action} ${e.prefix} ${ 'le %s' % e.le if e.le else ''} ${ 'ge %s' % e.ge if e.ge else ''}
+    %endfor
+% endfor
+
+
 % for rm in node.bgpd.route_maps:
-route-map ${rm.name}-${rm.neighbor.family} ${rm.match_policy} ${rm.order}
+route-map ${rm.name} ${rm.match_policy} ${rm.order}
         %for match in rm.match_cond:
-            %if match.cond_type == "access-list":
-    match ${ip_statement(rm.neighbor.peer)} address ${match.condition}
-            %elif match.cond_type == "prefix-list" or match.cond_type =='next-hop':
-    match {ip_statement(rm.neighbor.peer)} address ${match.cond_type} ${match.condition}
-            %else:
+            %if match.cond_type == "access-list" and match.family == rm.family:
+    match ${match.zebra_family} address ${match.condition}
+            %elif match.cond_type == "prefix-list" and match.family == rm.family:
+    match ${match.zebra_family} address ${match.cond_type} ${match.condition}
+            %elif match.cond_type =='next-hop':
+    match ${match.zebra_family} address ${match.cond_type} ${match.condition}
+            %elif match.cond_type == 'community':
+    match ${match.cond_type} ${match.condition}
+            %elif match.family == rm.family:
     match ${match.cond_type} ${match.condition}
             %endif
         %endfor
@@ -86,6 +99,6 @@ route-map ${rm.name}-${rm.neighbor.family} ${rm.match_policy} ${rm.order}
         %if rm.exit_policy:
     on-match ${rm.exit_policy}
         %endif
+!
 % endfor
 <%block name="router"/>
-!

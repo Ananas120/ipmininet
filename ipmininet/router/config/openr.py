@@ -23,13 +23,13 @@ class OpenrDomain(Overlay):
         return self.links_properties['openr_domain']
 
     @domain.setter
-    def domain(self, x):
-        self.links_properties['openr_domain'] = x
+    def domain(self, domain):
+        self.links_properties['openr_domain'] = domain
 
     def apply(self, topo):
         # Add all links for the routers
-        for r in self.nodes:
-            self.add_link(*topo.g[r])
+        for router in self.nodes:
+            self.add_link(*topo.g[router])
         super().apply(topo)
 
     def __str__(self):
@@ -45,10 +45,17 @@ class Openr(OpenrDaemon):
     def __init__(self, node, *args, **kwargs):
         super().__init__(node=node, *args, **kwargs)
 
+    @property
+    def logdir(self) -> str:
+        if 'log_dir' in self._options:
+            return self._options['log_dir']
+        return None
+
     def build(self):
         cfg = super().build()
+        self.options.redistribute_ifaces = \
+            ','.join([intf.name for intf in self._node.intfList()])
         cfg.update(self.options)
-        cfg.node_name = self._node.name
         interfaces = realIntfList(self._node)
         cfg.interfaces = self._build_interfaces(interfaces)
         cfg.networks = self._build_networks(interfaces)
@@ -60,17 +67,21 @@ class Openr(OpenrDaemon):
         """Return the list of OpenR networks to advertize from the list of
         active OpenR interfaces"""
         # Check that we have at least one IPv4 network on that interface ...
-        return [OpenrNetwork(domain=ip_interface('%s/%s' % (i.ip, i.prefixLen)))
-                for i in interfaces if i.ip]
+        def _openr_net(ip, prefixLen):
+            domain = ip_interface('%s/%s' % (ip, prefixLen))
+            return OpenrNetwork(domain=domain)
+
+        return [_openr_net(i.ip, i.prefixLen) for i in interfaces if i.ip]
 
     def _build_interfaces(self, interfaces):
         """Return the list of OpenR interface properties from the list of
         active interfaces"""
-        return [ConfigDict(description=i.describe,
-                           name=i.name,
-                           # Is the interface between two routers?
-                           active=self.is_active_interface(i),
-                           ) for i in interfaces]
+        def _iface_conf(iface):
+            return ConfigDict(description=iface.describe,
+                              name=iface.name,
+                              active=self.is_active_interface(iface))
+
+        return [_iface_conf(i) for i in interfaces]
 
     @staticmethod
     def _build_prefixes(interfaces):
@@ -78,15 +89,17 @@ class Openr(OpenrDaemon):
         for itf in interfaces:
             ipv6_addresses += itf.addresses[6]
         ipv6_addresses = filter(lambda x: not x.is_link_local, ipv6_addresses)
-        return ",".join(map(lambda x: x.with_prefixlen, ipv6_addresses))
+        return ','.join(map(lambda x: x.with_prefixlen, ipv6_addresses))
 
     def set_defaults(self, defaults):
         """Updates some options of the OpenR daemon to run a network of
         routers in mininet. For a full list of parameters see
         OpenrDaemon:_defaults in openrd.py"""
-        defaults.ifname_prefix = "r"
-        defaults.iface_regex_include = "r.*"
-        defaults.log_dir = "/var/log"
+        defaults.node_name = self._node.name
+        defaults.ifname_prefix = '{}-eth'.format(self._node.name)
+        defaults.iface_regex_include = '{}-eth.*'.format(self._node.name)
+        defaults.log_dir = '/var/tmp/log/{}'.format(self._node.name)
+        defaults.enable_v4 = True
         super().set_defaults(defaults)
 
     @staticmethod
