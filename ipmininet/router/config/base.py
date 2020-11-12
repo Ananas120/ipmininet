@@ -20,8 +20,9 @@ import mako.exceptions
 from mininet.log import lg as log
 
 if TYPE_CHECKING:
-    from ipmininet.router import IPNode, Router
-    from ipmininet.iptopo import IPTopo, NodeDescription
+    from ipmininet.router import IPNode, Router, OpenrRouter
+    from ipmininet.iptopo import IPTopo
+    from ipmininet.node_description import NodeDescription
 DaemonOption = Union['Daemon', Type['Daemon'],
                      Tuple[Union['Daemon', Type['Daemon']], Dict]]
 
@@ -290,6 +291,12 @@ class Daemon(metaclass=abc.ABCMeta):
         """Get the options ConfigDict for this daemon"""
         return self._options
 
+    @property
+    def logdir(self) -> str:
+        if 'logfile' in self._options:
+            return os.path.dirname(self._options['logfile'])
+        return None
+
     def build(self) -> ConfigDict:
         """Build the configuration tree for this daemon
 
@@ -469,3 +476,20 @@ class BorderRouterConfig(BasicRouterConfig):
             d = list(daemons)
             d.append((BGP, {'address_families': af}))
         super().__init__(node, daemons=d, *args, **kwargs)
+
+
+class OpenrRouterConfig(RouterConfig):
+    """A basic router that will run an OpenR daemon"""
+    def __init__(self, node: 'OpenrRouter',
+                 daemons: Iterable[DaemonOption] = (),
+                 additional_daemons: Iterable[DaemonOption] = (),
+                 *args, **kwargs):
+        """A simple router made of at least an OpenR daemon
+
+        :param additional_daemons: Other daemons that should be used"""
+        # Importing here to avoid circular import
+        from .openr import Openr
+        daemon_list = list(daemons)
+        daemon_list.append(Openr)
+        daemon_list.extend(additional_daemons)
+        super().__init__(node, daemons=daemon_list, *args, **kwargs)

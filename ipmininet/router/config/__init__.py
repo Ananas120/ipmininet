@@ -1,6 +1,7 @@
 """This module holds the configuration generators for daemons
 that can be used in a router."""
-from .base import BorderRouterConfig, BasicRouterConfig, RouterConfig, NodeConfig
+from .base import BorderRouterConfig, BasicRouterConfig, RouterConfig, \
+    OpenrRouterConfig, NodeConfig
 from .zebra import Zebra
 from .staticd import STATIC, StaticRoute
 from .ospf import OSPF, OSPFArea
@@ -17,6 +18,8 @@ from .pimd import PIMD
 from .ripng import RIPng
 from .openrd import OpenrDaemon
 from .openr import Openr, OpenrDomain
+from .exabgp import ExaBGPDaemon, ExaList, BGPRoute, BGPAttribute, \
+    BGPAttributeFlags, Representable, HexRepresentable, ExaList
 
 __all__ = ['BasicRouterConfig', 'NodeConfig', 'Zebra', 'OSPF', 'OSPF6',
            'OSPFArea', 'BGP', 'AS', 'SHARE', 'CLIENT_PROVIDER',
@@ -24,7 +27,10 @@ __all__ = ['BasicRouterConfig', 'NodeConfig', 'Zebra', 'OSPF', 'OSPF6',
            'ebgp_session', 'CommunityList', 'set_rr', 'AccessList', 'IPTables',
            'IP6Tables', 'SSHd', 'RADVD', 'AdvPrefix', 'AdvConnectedPrefix',
            'AdvRDNSS', 'PIMD', 'RIPng', 'STATIC', 'StaticRoute',
-           'OpenrDaemon', 'Openr', 'OpenrDomain', 'AF_INET', 'AF_INET6',
-           'BorderRouterConfig', 'Rule', 'Chain', 'ChainRule', 'NOT',
-           'PortClause', 'InterfaceClause', 'AddressClause', 'Filter',
-           'InputFilter', 'OutputFilter', 'TransitFilter', 'Allow', 'Deny']
+           'OpenrDaemon', 'Openr', 'OpenrRouterConfig', 'OpenrDomain',
+           'AF_INET', 'AF_INET6', 'BorderRouterConfig', 'Rule', 'Chain',
+           'ChainRule', 'NOT', 'PortClause', 'InterfaceClause',
+           'AddressClause', 'Filter', 'InputFilter', 'OutputFilter',
+           'TransitFilter', 'Allow', 'Deny', 'ExaBGPDaemon',
+           'ExaList', 'BGPRoute', 'BGPAttributeFlags',
+           'BGPAttribute', 'Representable', 'HexRepresentable']
