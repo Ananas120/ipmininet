@@ -376,7 +376,9 @@ class JSONTopo(IPTopo):
                 subnet = format_address(subnet, self.__prefixes)
             ip1, ip2 = subnet
         elif self.infer_ip_link:
-            ip1, ip2 = self.generate_ip(node, 2, 1)
+            generated_ips = self.generate_ip(node, 2, 1)
+            if generated_ips:
+                ip1, ip2 = generated_ips
         
         kwargs = {** config_node, ** config_voisin}
         if ip1 is not None:
