@@ -3,34 +3,48 @@
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CLIENT_PROVIDER, bgp_peering
 
+families = (
+    AF_INET(redistribute=('connected',)),
+    AF_INET6(redistribute=('connected',))
+)
 
 class TestTopo(IPTopo):
     def build(self, * args, ** kwargs):
+        def add_daemon(r):
+            r.addDaemon(BGP, address_families=families)
+            r.addDaemon(OSPF)
+            r.addDaemon(OSPF6)
+            return r
+        
         as1_r1 = self.addRouter("as1_r1", config = RouterConfig)
         as2_r1 = self.addRouter("as2_r1", config = RouterConfig)
+        
+        as1_r2 = self.addRouter("as1_r2", config = RouterConfig)
+        as2_r2 = self.addRouter("as2_r2", config = RouterConfig)
         
         as1_h = self.addHost("as1_h")
         as2_h = self.addHost("as2_h")
         
-        self.addAS(1, nodes = ["as1_r1"])
-        self.addAS(2, nodes = ["as2_r1"])
+        self.addAS(1, [as1_r1, as1_r2])
+        self.addAS(2, [as2_r1, as2_r2])
         
-        as1_r1.addDaemon(BGP, address_families=[AF_INET6(redistribute=['connected'])])
-        as2_r1.addDaemon(BGP, address_families=[AF_INET6(redistribute=['connected'])])
+        add_daemon(as1_r1)
+        add_daemon(as2_r1)
         
-        as1_r1.addDaemon(OSPF)
-        as2_r1.addDaemon(OSPF)
-        
-        as1_r1.addDaemon(OSPF6)
-        as2_r1.addDaemon(OSPF6)
-        
-        self.addLink(as1_r1, as1_h)
+        add_daemon(as1_r2)
+        add_daemon(as2_r2)
+                
+        self.addLink(as1_r2, as1_h)
+        self.addLink(as1_r2, as1_r1)
         self.addLink(as1_r1, as2_r1)
+        self.addLink(as2_r2, as2_r1)
         self.addLink(as2_r1, as2_h)
         
-        ebgp_session(self, as1_r1, as2_r1)
+        set_rr(self, rr = as1_r1, peers = [as1_r2])
+        set_rr(self, rr = as2_r1, peers = [as2_r2])
+        ebgp_session(self, as1_r1, as2_r1, link_type=CLIENT_PROVIDER)
         
         super().build(*args, **kwargs)
         
