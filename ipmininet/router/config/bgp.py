@@ -161,7 +161,7 @@ class BGPConfig:
 
     def set_local_pref(self, local_pref: int, from_peer: str,
                        matching: Sequence[Union[AccessList, CommunityList]] =
-                       ()) -> 'BGPConfig':
+                       (), name: str = None, order: int = 10) -> 'BGPConfig':
         """Set local pref on a peering with 'from_peer' on routes
          matching all of the access and community lists in 'matching'
 
@@ -173,7 +173,7 @@ class BGPConfig:
         self.add_set_action(peer=from_peer,
                             set_action=RouteMapSetAction('local-preference',
                                                          local_pref),
-                            matching=matching, direction='in')
+                            matching=matching, direction='in', name=name, order=order)
         return self
 
     def set_med(self, med: int, to_peer: str,
@@ -331,7 +331,7 @@ class BGPConfig:
 
     def add_set_action(self, peer: str, set_action: RouteMapSetAction,
                        matching: Sequence[Union[AccessList, CommunityList]],
-                       direction: str) -> 'BGPConfig':
+                       direction: str, name: str = None,  order: int = 10) -> 'BGPConfig':
         """Add a 'RouteMapSetAction' to a BGP peering between two nodes
 
         :param peer: The peer to which the route map is applied
@@ -344,9 +344,24 @@ class BGPConfig:
 
         for family in ('ipv4', 'ipv6'):
             match_cond = self.filters_to_match_cond(matching, family)
-            route_maps.append(
-                {'peer': peer, 'match_cond': match_cond,
-                 'set_actions': [set_action], 'direction': direction, 'family': family})
+            if name:
+                route_maps.append(
+                    {'peer': peer,
+                    'match_cond': match_cond,
+                    'set_actions': [set_action], 
+                    'direction': direction, 
+                    'family': family, 
+                    'order':order,
+                    'name': "%s-%s-%s" % (name, family, direction),})
+            else:
+                route_maps.append(
+                    {'peer': peer,
+                    'match_cond': match_cond,
+                    'set_actions': [set_action], 
+                    'direction': direction, 
+                    'family': family, 
+                    'order':order,})
+
         return self
 
 
