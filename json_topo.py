@@ -19,12 +19,31 @@ def get_next_multiple(n, multiple):
     return (n // multiple + 1) * multiple
 
 class JSONTopo(IPTopo):
+    """
+        Topology automatically created based on a JSON-formatted file (see 'topo_tp.json' or 'topo_ovh.son'for structure examples). 
+    """
     def __init__(self, filename, *args,
                  add_hosts = False,
                  infer_ip = False, infer_ip_lo = False, infer_ip_link = False,
                  name = 'Network Topology', debug = False,
                  ** kwargs
                 ):
+        """
+            Constructor of the JSONTopo class. 
+            Arguments : 
+                - filename  : the '.json' file containing the structure. 
+                - add_hosts : whether to add fictichious hosts or not. 
+                    - False : add 0 host. 
+                    - True  : add 1 hosts to every routers. 
+                    - int   : add <add_hosts> hosts for each AS. 
+                    - dict {as_nmae : int}  : add the specified number of hots to the specified AS. 
+                - infer_ip  : infer ip both for links and loopback addresses based on subnets. 
+                - infer_link    : infer /31 addresses for links based on the subnet of 1 router of the link. 
+                - infer_lo      : infer loopback-address based on subnets. 
+                - name  : name of the topology (for printing). 
+                - debug : whether to show construction of the topology or not. 
+                - * args / ** kwargs    : args for super().__init__
+        """
         self.name   = name
         self.debug  = debug
         self.filename = filename
@@ -51,10 +70,12 @@ class JSONTopo(IPTopo):
     
     @property
     def as_names(self):
+        """ Return a list of ASes names """
         return list(self.__as.keys())
     
     @property
     def list_links(self):
+        """ Return a list of links [(node, voisin, config), ...]"""
         links = []
         for node, voisins in self.__links.items():
             config = {}
@@ -76,14 +97,17 @@ class JSONTopo(IPTopo):
     
     @property
     def list_routers(self):
+        """ Return a list of routers names """
         return list(self.__routers.keys())
     
     @property
     def list_non_rr_routers(self):
+        """ Return a list of routers names (which are not RR) """
         return [r_name for r_name in self.list_routers if r_name not in self.list_rr]
     
     @property
     def list_rr(self):
+        """ Return a list of RR names """
         liste = []
         for as_name, as_infos in self.__as.items():
             for nivea, rr in as_infos.get('rr', {}).items():
@@ -92,6 +116,7 @@ class JSONTopo(IPTopo):
     
     @property
     def list_ibgp_sessions(self):
+        """ Return a list of all iBGP sessions [(node, voisin), ...] """
         links = []
         for rr, clients in self.__bgp_sessions['clients'].items():
             for c in clients:
@@ -105,6 +130,7 @@ class JSONTopo(IPTopo):
     
     @property
     def list_ebgp_sessions(self):
+        """ Return a list of eBGP sessions [(router1, router2, link_type), ...] """
         already_added = {}
         links = []
         for as_name, as_voisins in self.__bgp_sessions['ebgp'].items():
@@ -120,10 +146,8 @@ class JSONTopo(IPTopo):
                 
         return links
     
-    
-    
-    
     def __str__(self):
+        """ Describe the topology """
         des = '\n==============================\n'
         des += 'Description of {}\n'.format(self.name)
         des += '==============================\n\n'
@@ -134,6 +158,7 @@ class JSONTopo(IPTopo):
         return des
     
     def describe(self):
+        """ Describe the topology (general information) """
         des = "Description générale :\n"
         des += "- ASes (number = {}) : {}\n".format(len(self.__as), self.as_names)
         
@@ -153,6 +178,7 @@ class JSONTopo(IPTopo):
         return des
     
     def describe_ibpg(self):
+        """ Describe the topology (iBGP information) """
         des = "Description of iBGP connections :\n"
         des += "- Number of iBGP sessions : {}\n".format(len(self.list_ibgp_sessions))
         for as_name, as_infos in self.__as.items():
@@ -172,11 +198,33 @@ class JSONTopo(IPTopo):
         return des
     
     def describe_ebgp(self):
+        """ Describe the topology (eBGP information) """
         des = "Description of eBGP sessions :\n"
         des += "- Number of eBGP sessions : {}\n".format(len(self.list_ebgp_sessions))
+        
+        nb_connections = {}
+        for as_name, as_voisins in self.__bgp_sessions['ebgp'].items():
+            nb_connections[as_name] = sum([len(l) for _, l in as_voisins.items()])
+        sorted_as = sorted(list(nb_connections.items()), key = lambda v: v[1], reverse = True)
+        
+        already_done = []
+        for as_name, nb_co in sorted_as:
+            voisins = {
+                voisin_name : links 
+                for voisin_name, links in self.__bgp_sessions['ebgp'][as_name].items()
+                if voisin_name not in already_done
+            }
+            if len(voisins) == 0: continue
+            voisins = sorted(list(voisins.items()), key = lambda v: len(v[1]), reverse = True)
+            des += "-- eBGP neighbors of AS {} (total = {}) :\n".format(as_name, nb_co)
+            for voisin_name, links in voisins:
+                des += "--- Neighbor {} : {} connections\n".format(voisin_name, len(links))
+            already_done.append(as_name)
+
         return des
         
     def describe_anycast(self):
+        """ Describe the topology (anycast servers information) """
         if len(self.__anycast) == 0: return ''
         
         des = "Description of Anycast servers :\n"
@@ -190,6 +238,10 @@ class JSONTopo(IPTopo):
         return des
         
     def get(self, name):
+        """
+            Return the object for a given name (or list of names)
+            name can be a router-name, host-name or anycast server name
+        """
         if isinstance(name, (list, tuple)):
             return [self.get(n) for n in name]
         return self.__routers.get(
@@ -198,29 +250,47 @@ class JSONTopo(IPTopo):
                     name, None)))
 
     def get_routers(self, as_name = None):
+        """ Return name of routers (of a specified AS if as_name is not None) """
         if as_name is None: return list(self.__routers.values())
         return self.get(self.__as[as_name]['routers'])
         
     def get_anycast_servers(self, as_name = None):
+        """ Return name of anycast servers (of a specified AS if as_name is not None) """
         if as_name is None: return list(self.__anycast_servers.values())
         return self.get(list(self.__as[as_name]['anycast_servers'].keys()))
         
     def get_hosts(self, as_name = None):
+        """ Return name of hosts (of a specified AS if as_name is not None) """
         if as_name is None: return list(self.__hosts.values())
         return self.get(self.__as[as_name]['hosts'])
     
     def get_as_of(self, name):
+        """ Return the AS of the given name"""
         for as_name, as_config in self.__as.items():
             if name in as_config['routers'] or name in as_config['hosts'] or name in as_config['anycast_servers']:
                 return as_name
         return None
     
     def get_subnet_of(self, name):
+        """ Return thesubnet of a given name """
         for subnet, subnet_config in self.__subnets.items():
             if name in subnet_config.get('nodes', []): return subnet
         return None
     
     def generate_ip(self, name, n = 1, host_bits = 0, ipv4 = True, ipv6 = True):
+        """
+            Generate new IP address for a given subnet. 
+            Arguments : 
+                - name  : the name of the node to determine the subnet (with self.get_subnet_of(name))
+                - n     : th number of address to generate. 
+                - host_bits : number of bits to keep for hosts (mask = /32 - hosts_bits for ipv4 and /128 - host_bits for ipv6)
+                - ipv4  : generate the ipv4 address. 
+                - ipv6  : generate the ipv6 address. 
+            Return : list of 'n' addresses
+                addresses can be : 
+                    - None  : if 'name' has no subnet. 
+                    - list of list : [ipv4] / [ipv6] / [ipv4, ipv6] addresse (depending on the ipv4 and ipv6 arguments). 
+        """
         def add_addr_to_subnet(net, first_addr, host_bits, is_ipv6):
             sep = '.' if not is_ipv6 else ':'
             new_mask = 32 - host_bits if not is_ipv6 else 128 - host_bits
@@ -276,6 +346,7 @@ class JSONTopo(IPTopo):
         return subnets if len(subnets) > 1 else subnets[0]
             
     def add_new_link(self, r1, r2):
+        """ Add a new link between r1 and r2 in the configuration """
         if r1 in self.__links:
             if isinstance(self.__links[r1], dict):
                 self.__links[r1].setdefault('nodes', [])
@@ -286,6 +357,7 @@ class JSONTopo(IPTopo):
             self.__links[r1] = [r2]
         
     def add_fictif_host(self, as_name, r_name):
+        """ Add a fictitious host according to self.add_hosts """
         if isinstance(self.add_hosts, bool):
             self.add_host_to_router(r_name, 1)
         elif isinstance(self.add_hosts, int):
@@ -304,12 +376,14 @@ class JSONTopo(IPTopo):
             self.add_host_to_router(r_name, 1)
     
     def add_bgp_fullmesh(self, niveau, rr):
+        """ Add a BGP fullmesh between rr """
         self.__bgp_sessions['fullmesh'].append(rr)
         if self.debug:
             print("Adding iBGP full-mesh between RR of level {} : {}".format(niveau, rr))
         return bgp_fullmesh(self, [self.__routers[copain_rr] for copain_rr in rr])
     
     def add_bgp_clients(self, rr_name, clients):
+        """ Add iBGP clients to rr_name """
         self.__bgp_sessions['clients'][rr_name] = clients
         if self.debug: 
             print("Setting router {} as Route Reflector with clients {}".format(rr_name, clients))
@@ -319,6 +393,7 @@ class JSONTopo(IPTopo):
         return True
     
     def add_ebgp_session(self, node, voisin, as_1, as_2, link_type = 'share'):
+        """ Add eBGP session between node and voisin """
         self.__bgp_sessions['ebgp'].setdefault(as_1, {})
         self.__bgp_sessions['ebgp'][as_1].setdefault(as_2, [])
         
@@ -334,6 +409,17 @@ class JSONTopo(IPTopo):
         return ebgp_session(self, node, voisin, link_type = None) #_link_types.get(link_type, None))
     
     def add_daemons(self, router, daemons, default_daemons = []):
+        """
+            Add daemon to router. 
+            Arguments : 
+                - router    : the router class to which add daemons. 
+                - daemons   : daemons specific for this router. 
+                - default_daemons   : daemons by default. 
+            
+            daemons and default_daemons can be : 
+                - list  : name of daemons (will be added without specific config). 
+                - dict  : {daemon_name : dict (config)}
+        """
         if isinstance(default_daemons, list):
             default_daemons = {d : {} for d in default_daemons}
         if isinstance(daemons, list): daemons = {d : {} for d in daemons}
@@ -358,11 +444,23 @@ class JSONTopo(IPTopo):
                     AF_INET6(redistribute=('connected',))
                 )
                 router.addDaemon(BGP, address_families=families)
-            
+            else:
+                raise NotImplementedError("Daemon {} is not supported yet !".format(d))
+
         return True
 
     def add_link(self, node, voisin, config_node, config_voisin, link_type = 'share', 
                  ** kwargs):
+        """
+            Add a physical link between 2 devices (routers, hosts, anycast servers). 
+            Arguments :
+                - node / voisin : name of devices to link. 
+                - config_node   : config of node for the link. 
+                - config_voisin : config of voisin for the link. 
+                - link_type     : used if as of node and voisin are not the same. 
+            
+            Note : if AS of the 2 devices are not the same, add an eBGP connection. 
+        """
         as_1, as_2 = self.get_as_of(node), self.get_as_of(voisin)
         node, voisin = self.get(node), self.get(voisin)
         
@@ -400,6 +498,7 @@ class JSONTopo(IPTopo):
         return link
     
     def add_host_to_router(self, router, n = 1):
+        """ Add a fictitious host to router """
         as_name = self.get_as_of(router)
         for i in range(n):
             h_name = '{}_{}'.format(router, i)[-9:]
@@ -418,6 +517,7 @@ class JSONTopo(IPTopo):
             
     
     def build(self, *args, **kwargs):
+        """ Build the topology according to the given configuration file """
         with open(self.filename, 'r', encoding = 'utf-8') as file:
             config = file.read()
         config = json.loads(config)
