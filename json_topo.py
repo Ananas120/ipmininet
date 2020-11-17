@@ -165,12 +165,24 @@ class JSONTopo(IPTopo):
         des += "- ASes (number = {}) : {}\n".format(len(self.__as), self.as_names)
         
         des += "- Number of routers for each AS (total = {}) :\n".format(len(self.__routers))
-        for as_name, as_infos in self.__as.items():
+        
+        sorted_routers = sorted(
+            list(self.__as.items()), 
+            key = lambda a: len(a[1].get('routers', [])), 
+            reverse = True
+        )
+        for as_name, as_infos in sorted_routers:
             if len(as_infos.get('routers', [])) > 0:
                    des += "-- Number of routers for AS {} \t: {}\n".format(as_name, len(as_infos.get('routers')))
             
         des += "- Number of hosts for each AS (total = {}) :\n".format(len(self.__hosts))
-        for as_name, as_infos in self.__as.items():
+        
+        sorted_hosts = sorted(
+            list(self.__as.items()), 
+            key = lambda a: len(a[1].get('hosts', [])), 
+            reverse = True
+        )
+        for as_name, as_infos in sorted_hosts:
             if len(as_infos.get('hosts', [])) > 0:
                    des += "-- Number of hosts for AS {} \t: {}\n".format(as_name, len(as_infos.get('hosts')))
                    
