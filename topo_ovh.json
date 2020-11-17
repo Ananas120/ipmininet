@@ -174,23 +174,17 @@
         },
         "UPC" : {
             "routers" : {
-                "upc_var" : {"clients" : ["upc_var0"]},
-                "upc_vie" : {"clients" : ["upc_vie0"], "daemons": {"bgp" : {"communities": {
-                    "send_community": ["16276:90"]
-                }}}},
-                "upc_fra" : {"clients" : ["upc_fra0"], "daemons": {"bgp" : {"communities": {
+                "upc_var" : {},
+                "upc_vie" : {},
+                "upc_fra" : {"clients" : ["upc_ams","upc_vie", "upc_fra", "upc_zrh"], "daemons": {"bgp" : {"communities": {
                     "send_community": ["16276:120"]
                 }}}},
-                "upc_zrh" : {
-                    "clients" : ["upc_zrh0"], "daemons": {"bgp" : {"communities": {
-                        "send_community": ["16276:80"]
-                    }}}},
-                "upc_ams" : {"clients" : ["upc_ams0"]},
-                "upc_var0" : {},
-                "upc_vie0" : {},
-                "upc_fra0" : {},
-                "upc_zrh0" : {},
-                "upc_ams0" : {}
+                "upc_zrh" : {"daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:90"]
+                }}}},
+                "upc_ams" : {"daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:80"]
+                }}}}
             },
             "rconfig" : {
                 "daemons" : {
@@ -312,11 +306,11 @@
         "telia_var"   : ["varsovie"],
         "telia_ams"   : ["ams-1"],
         
-        "upc_var"     : ["varsovie", "upc_var0"],
-        "upc_vie"     : ["vienne", "upc_vie0"],
-        "upc_fra"     : ["fra-5_fr5", "upc_fra0"],
-        "upc_zrh"     : ["zurich", "upc_zrh0"],
-        "upc_ams"     : ["ams-5", "upc_ams0"],
+        "upc_var"     : ["varsovie"],
+        "upc_vie"     : ["vienne"],
+        "upc_fra"     : ["fra-5_fr5", "upc_ams"],
+        "upc_zrh"     : ["zurich"],
+        "upc_ams"     : ["ams-5"],
         
         "sea_fra" : ["fra-5_fr5"],
         "sea_mil" : ["milan"],

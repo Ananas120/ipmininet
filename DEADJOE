@@ -1,0 +1,51 @@
+
+*** These modified files were found in JOE when it aborted on Mon Nov  9 14:40:12 2020
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+/home/vagrant/ipmininet/.git/COMMIT_EDITMSG
+
+*** File '/home/vagrant/ipmininet/.git/COMMIT_EDITMSG'
+revert "début securité"
+
+This reverts commit 4032d6d54e76719a0e1a93e2f690b31301e1703f.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch master
+# Your branch is ahead of 'origin/master' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   json_topo.py
+#	modified:   main.py
+#	modified:   test_topo.py
+#
+
+*** File '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
+
+*** These modified files were found in JOE when it aborted on Tue Nov 17 15:40:52 2020
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+/home/vagrant/ipmininet/.git/MERGE_MSG
+
+*** File '/home/vagrant/ipmininet/.git/MERGE_MSG'
+Merge
+	
+# Please enter a commit message to explain why this merge is necessary,
+# especially if it merges an updated upstream into a topic branch.
+#
+# Lines starting with '#' will be ignored, and an empty message aborts
+# the commit.
+
+*** File '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
