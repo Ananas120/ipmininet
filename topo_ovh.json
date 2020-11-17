@@ -142,7 +142,9 @@
                 "bgp": {
                     "communities": {
                         "set_local_pref": {
-                            "16276:90": 90
+                            "16276:120": 120,
+                            "16276:90": 90,
+                            "16276:80": 80
                         }
                     }
                 }
@@ -173,9 +175,16 @@
         "UPC" : {
             "routers" : {
                 "upc_var" : {"clients" : ["upc_var0"]},
-                "upc_vie" : {"clients" : ["upc_vie0"]},
-                "upc_fra" : {"clients" : ["upc_fra0"]},
-                "upc_zrh" : {"clients" : ["upc_zrh0"]},
+                "upc_vie" : {"clients" : ["upc_vie0"], "daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:90"]
+                }}}},
+                "upc_fra" : {"clients" : ["upc_fra0"], "daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:120"]
+                }}}},
+                "upc_zrh" : {
+                    "clients" : ["upc_zrh0"], "daemons": {"bgp" : {"communities": {
+                        "send_community": ["16276:80"]
+                    }}}},
                 "upc_ams" : {"clients" : ["upc_ams0"]},
                 "upc_var0" : {},
                 "upc_vie0" : {},
@@ -185,9 +194,7 @@
             },
             "rconfig" : {
                 "daemons" : {
-                    "ospf" : {}, "ospf6" : {}, "bgp" : {"communities": {
-                        "send_community": ["16276:90"]
-                    }}
+                    "ospf" : {}, "ospf6" : {}, "bgp" : {}
                 }
             },
             "linked" : true
