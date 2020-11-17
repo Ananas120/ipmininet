@@ -385,7 +385,8 @@ class RouteMap:
                and self.direction == other.direction \
                and self.exit_policy == other.exit_policy \
                and self.order == other.order \
-               and self.family == other.family
+               and self.family == other.family \
+               and self.name == other.name
 
     def append_match_cond(self, match_conditions):
         """

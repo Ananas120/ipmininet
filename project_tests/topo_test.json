@@ -3,14 +3,7 @@
     "AS" : {
         "AS1" : {
             "routers" : {
-                "as1_r1" : {"clients" : ["as1_r2", "as1_r3"], 
-                    "daemons" : {"bgp": {
-                        "communities": {
-                            "set_local_pref": {
-                                "16276:80": 80
-                            }
-                        }
-                    }}},
+                "as1_r1" : {"clients" : ["as1_r2", "as1_r3"]},
                 "as1_r2" : {"clients" : ["as1_r4"], "niveau" : 2, "peers" : ["as1_r3"]},
                 "as1_r3" : {
                     "clients" : ["as1_r5"], 
@@ -22,15 +15,18 @@
             "hosts" : {
             },
             "rconfig" : {
-                "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {}}
+                "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {
+                    "communities": {
+                        "set_local_pref": {
+                            "16276:90": 90
+                        }
+                    }
+                }}
             }
         },
         "AS2" : {
             "routers" : {
-                "as2_r1" : {"clients" : ["as2_r2"]},
-                "as2_r2" : {}
-            },
-            "hosts" : {
+                "as2_r1" : {}
             },
             "rconfig" : {
                 "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {
@@ -44,7 +40,6 @@
     "links" : {
         "as1_r2" : ["as1_r4"],
         "as1_r3" : ["as1_r5"],
-        "as1_r1" : ["as2_r1", "as1_r2", "as1_r3"],
-        "as2_r2" : ["as2_r1"]
+        "as1_r1" : ["as2_r1", "as1_r2", "as1_r3"]
     }
 }

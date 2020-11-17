@@ -6,8 +6,9 @@ import itertools
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList, BGPRoute, BGPAttribute, ExaList, ExaBGPDaemon
 from ipaddr_utils import format_prefixes, format_address, create_subnets
+from ipaddress import ip_network
 
 _link_types = {
     'share' : SHARE
@@ -16,6 +17,8 @@ _link_types = {
 def get_next_multiple(n, multiple):
     if n % multiple == 0: return n
     return (n // multiple + 1) * multiple
+
+
 
 class JSONTopo(IPTopo):
     def __init__(self, filename, *args,
@@ -45,6 +48,8 @@ class JSONTopo(IPTopo):
             'ebgp' : {}         # AS : list (router - voisin)
         }
         self.__communities = {}
+
+        self.exaBGPCounter = 0;
         
         super().__init__(self, * args, ** kwargs)
     
@@ -357,8 +362,41 @@ class JSONTopo(IPTopo):
                     AF_INET6(redistribute=('connected',))
                 )
                 router.addDaemon(BGP, address_families=families)
+            elif d == "exaBGP":
+                self.add_exaBGP(router, d_config)
             
         return True
+
+    def add_exaBGP(self, router, config):
+        #Creating a ExaBGP router to inject routes to router
+        exa_routes = {
+            "ipv4": [
+                BGPRoute(ip_network(ip), [BGPAttribute("next-hop", "self"),
+                                                BGPAttribute("as-path", ExaList([999,90])),
+                                                BGPAttribute("med", 10),
+                                                BGPAttribute("origin", "egp")]) for ip in config["ipv4"]
+            ],
+            "ipv6": [
+                BGPRoute(ip_network(ip), [BGPAttribute("next-hop", "self"),
+                                                BGPAttribute("as-path", ExaList([999,90])),
+                                                BGPAttribute("med", 10),
+                                                BGPAttribute("origin", "egp")]) for ip in config["ipv6"]
+            ]
+        }
+
+        af4 = AF_INET(routes=exa_routes['ipv4'])
+        af6 = AF_INET6(routes=exa_routes['ipv6'])
+
+        # Add all routers
+        exaBGPRouter = self.addRouter(router+"_exa", config=RouterConfig, use_v4=True, use_v6=True)
+        exaBGPRouter.addDaemon(ExaBGPDaemon, address_families=(af4, af6))
+
+        link = self.addLink(exaBGPRouter, router)
+        link[exaBGPRouter].addParams(ip=("10.1.0.1/24", "fd00:12::1/64",))
+        link[router].addParams(ip=("10.1.0.2/24", "fd00:12::2/64",))
+        self.addAS(self.exaBGPCounter + 65000)
+        self.exaBGPCounter +=1
+        ebgp_session(self, router, exaBGPRouter)
 
     def add_link(self, node, voisin, config_node, config_voisin, link_type = 'share', 
                  ** kwargs):
@@ -437,18 +475,15 @@ class JSONTopo(IPTopo):
             all_al4 = AccessList(family='ipv4', name='allv4', entries=('any',))
             all_al6 = AccessList(family='ipv6', name='allv6', entries=('any',))
 
-            #Problem with IPMininet
             if "set_local_pref" in communities_config:
                 for community_value in communities_config["set_local_pref"]:
-                    print(community_value)
                     local_pref = communities_config["set_local_pref"][community_value]
                     
                     community = CommunityList("loc-pref", community=community_value)
                     for x in self.__routers:
-                        print("{} Je set le local from {}".format(router,x))
                         router.get_config(BGP)\
-                            .set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=20)\
-                            .set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=30)
+                            .set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=10)\
+                            .set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=20)
 
 
             if "send_community" in communities_config:
@@ -621,7 +656,7 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'project_tests/topo_test.json', debug = True, name = 'OVH East-Europa topology',
+        filename = 'topo_ovh.json', debug = True, name = 'OVH East-Europa topology',
         add_hosts = True, infer_ip = True
     )
     net = IPNet(topo=topo, allocate_IPs = True)
