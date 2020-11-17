@@ -539,17 +539,17 @@ class JSONTopo(IPTopo):
             communities_config = self.__communities[router]
             all_al4 = AccessList(family='ipv4', name='allv4', entries=('any',))
             all_al6 = AccessList(family='ipv6', name='allv6', entries=('any',))
-            order_rm = 10
-            if "set_local_pref" in communities_config:
-                for community_value in communities_config["set_local_pref"]:
-                    local_pref = communities_config["set_local_pref"][community_value]
-                    
-                    community = CommunityList("loc-pref"+str(community_value), community=community_value)
-                    for x in self.__routers:
-                        router.get_config(BGP).set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=order_rm)
-                    order_rm += 10
-                router.get_config(BGP).set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=order_rm)                            
+            
 
+            if "set_local_pref" in communities_config:
+                for x in self.__routers:
+                    order_rm = 10
+                    for community_value in communities_config["set_local_pref"]:
+                        local_pref = communities_config["set_local_pref"][community_value]
+                        community = CommunityList("loc-pref"+str(community_value), community=community_value)
+                        router.get_config(BGP).set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=order_rm)
+                        order_rm += 10
+                    router.get_config(BGP).set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=order_rm)
 
             if "send_community" in communities_config:
                 for community_value in communities_config["send_community"]:
