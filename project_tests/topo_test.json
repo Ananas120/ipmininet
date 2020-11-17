@@ -26,7 +26,10 @@
         },
         "AS2" : {
             "routers" : {
-                "as2_r1" : {}
+                "as2_r1" : {"clients" : ["as2_r2"]},
+                "as2_r2" : {}
+            },
+            "hosts" : {
             },
             "rconfig" : {
                 "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {
@@ -40,6 +43,7 @@
     "links" : {
         "as1_r2" : ["as1_r4"],
         "as1_r3" : ["as1_r5"],
-        "as1_r1" : ["as2_r1", "as1_r2", "as1_r3"]
+        "as1_r1" : ["as2_r1", "as1_r2", "as1_r3"],
+        "as2_r2" : ["as2_r1"]
     }
 }

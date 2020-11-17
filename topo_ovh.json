@@ -210,10 +210,7 @@
             },
             
             "rconfig" : {
-                "daemons" : {"ospf":{}, "ospf6":{}, "bgp":{}, "exaBGP" : {
-                    "ipv4": ["8.0.0.0/12", "4.0.0.0/8"],
-                    "ipv6": ["2001:1900:201e::/48"]
-                }}
+                "daemons" : {"ospf":{}, "ospf6":{}, "bgp":{}}
             },
             "linked" : true
         },

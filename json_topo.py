@@ -6,7 +6,7 @@ import itertools
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList, BGPRoute, BGPAttribute, ExaList, ExaBGPDaemon
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList
 from ipaddr_utils import format_prefixes, format_address, create_subnets
 from ipaddress import ip_network
 
@@ -48,8 +48,6 @@ class JSONTopo(IPTopo):
             'ebgp' : {}         # AS : list (router - voisin)
         }
         self.__communities = {}
-
-        self.exaBGPCounter = 0;
         
         super().__init__(self, * args, ** kwargs)
     
@@ -362,41 +360,8 @@ class JSONTopo(IPTopo):
                     AF_INET6(redistribute=('connected',))
                 )
                 router.addDaemon(BGP, address_families=families)
-            elif d == "exaBGP":
-                self.add_exaBGP(router, d_config)
             
         return True
-
-    def add_exaBGP(self, router, config):
-        #Creating a ExaBGP router to inject routes to router
-        exa_routes = {
-            "ipv4": [
-                BGPRoute(ip_network(ip), [BGPAttribute("next-hop", "self"),
-                                                BGPAttribute("as-path", ExaList([999,90])),
-                                                BGPAttribute("med", 10),
-                                                BGPAttribute("origin", "egp")]) for ip in config["ipv4"]
-            ],
-            "ipv6": [
-                BGPRoute(ip_network(ip), [BGPAttribute("next-hop", "self"),
-                                                BGPAttribute("as-path", ExaList([999,90])),
-                                                BGPAttribute("med", 10),
-                                                BGPAttribute("origin", "egp")]) for ip in config["ipv6"]
-            ]
-        }
-
-        af4 = AF_INET(routes=exa_routes['ipv4'])
-        af6 = AF_INET6(routes=exa_routes['ipv6'])
-
-        # Add all routers
-        exaBGPRouter = self.addRouter(router+"_exa", config=RouterConfig, use_v4=True, use_v6=True)
-        exaBGPRouter.addDaemon(ExaBGPDaemon, address_families=(af4, af6))
-
-        link = self.addLink(exaBGPRouter, router)
-        link[exaBGPRouter].addParams(ip=("10.1.0.1/24", "fd00:12::1/64",))
-        link[router].addParams(ip=("10.1.0.2/24", "fd00:12::2/64",))
-        self.addAS(self.exaBGPCounter + 65000)
-        self.exaBGPCounter +=1
-        ebgp_session(self, router, exaBGPRouter)
 
     def add_link(self, node, voisin, config_node, config_voisin, link_type = 'share', 
                  ** kwargs):
