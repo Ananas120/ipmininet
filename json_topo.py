@@ -7,8 +7,8 @@ from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
 from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList
-
 from ipaddr_utils import format_prefixes, format_address, create_subnets
+from ipaddress import ip_network
 
 _link_types = {
     'share' : SHARE
@@ -17,6 +17,8 @@ _link_types = {
 def get_next_multiple(n, multiple):
     if n % multiple == 0: return n
     return (n // multiple + 1) * multiple
+
+
 
 class JSONTopo(IPTopo):
     """
@@ -535,22 +537,24 @@ class JSONTopo(IPTopo):
     def _build_bgp_communities(self):
         for router in self.__communities:
             communities_config = self.__communities[router]
+            all_al4 = AccessList(family='ipv4', name='allv4', entries=('any',))
+            all_al6 = AccessList(family='ipv6', name='allv6', entries=('any',))
 
-            #Problem with IPMininet
-            #if "set_local_pref" in communities_config:
-             #   for community_value in communities_config["set_local_pref"]:
-                    #print(community_value)
-                    #local_pref = communities_config["set_local_pref"][community_value]
-                    #community = CommunityList(community_value)
-                    #for x in self.__routers:
-                        #print("{} Je set le local from {}".format(router,x))
-                        #router.get_config(BGP).set_local_pref(local_pref,from_peer=None, matching=(community,))
+            if "set_local_pref" in communities_config:
+                for community_value in communities_config["set_local_pref"]:
+                    local_pref = communities_config["set_local_pref"][community_value]
+                    
+                    community = CommunityList("loc-pref", community=community_value)
+                    for x in self.__routers:
+                        router.get_config(BGP)\
+                            .set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=10)\
+                            .set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=20)
+
 
             if "send_community" in communities_config:
                 for community_value in communities_config["send_community"]:
-                    all_al = AccessList('all', ('any',))
                     for router_y in self.__routers:
-                        router.get_config(BGP).set_community(community_value, to_peer=router_y, matching=(all_al,))
+                        router.get_config(BGP).set_community(community_value, to_peer=router_y, matching=(all_al4, all_al6))
         
     def _build_as(self, * args, ** ases):
         for i, (as_name, as_config) in enumerate(ases.items()):

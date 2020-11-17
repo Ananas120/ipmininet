@@ -7,18 +7,7 @@
                 "as1_r2" : {"clients" : ["as1_r4"], "niveau" : 2, "peers" : ["as1_r3"]},
                 "as1_r3" : {
                     "clients" : ["as1_r5"], 
-                    "niveau" : 2,
-                    "daemons": {
-                        "bgp": {
-                            "communities": {
-                                "set_local_pref": {
-                                    "16276:120": 80,
-                                    "16276:90": 70,
-                                    "16276:80": 90
-                                }
-                            }
-                        }
-                    }
+                    "niveau" : 2
                 },
                 "as1_r4" : {},
                 "as1_r5" : {}
@@ -29,11 +18,8 @@
                 "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {
                     "communities": {
                         "set_local_pref": {
-                            "16276:120": 50,
-                            "16276:90": 60,
-                            "16276:80": 110
-                        },
-                        "send_community": ["16276:80"]
+                            "16276:90": 90
+                        }
                     }
                 }}
             }
@@ -48,12 +34,7 @@
             "rconfig" : {
                 "daemons" : {"ospf": {}, "ospf6":{}, "bgp": {
                     "communities": {
-                        "set_local_pref": {
-                            "16276:120": 50,
-                            "16276:90": 60,
-                            "16276:80": 110
-                        },
-                        "send_community": ["16276:80"]
+                        "send_community": ["16276:90"]
                     }
                 }}
             }

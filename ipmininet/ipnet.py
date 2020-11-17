@@ -2,6 +2,7 @@
 This modules will auto-generate all needed configuration properties if
 unspecified by the user"""
 import math
+import random
 from operator import attrgetter, methodcaller
 from typing import Union, List, Optional, Type, Iterable, Mapping, Tuple, \
     Iterator, Dict, Set
@@ -28,6 +29,7 @@ PING6_CMD = 'ping6' if has_cmd('ping6') else 'ping -6'
 
 class IPNet(Mininet):
     """IPNet: An IP-aware Mininet"""
+
     def __init__(self,
                  router: Type[Router] = Router,
                  config: Type[RouterConfig] = BasicRouterConfig,
@@ -188,26 +190,7 @@ class IPNet(Mininet):
         for h in self.hosts:
             if 'defaultRoute' in h.params:
                 continue  # Skipping hosts with explicit default route
-            default = False
-            # The first router we find will become the default gateway
-            for itf in realIntfList(h):
-                for r in itf.broadcast_domain.routers:
-                    log.info('%s via %s, ' % (h.name, r.name))
-                    if self.use_v4 and h.use_v4 and len(r.addresses[4]) > 0:
-                        h.setDefaultRoute('via %s' % r.ip)
-                        default = True
-                    if (self.use_v6 and h.use_v6 and len(r.addresses[6]) > 0 and
-                            len(r.ra_prefixes)) == 0:
-                        # We define a default route only if router xi
-                        # advertisement are not activated. If we call the same
-                        # function, the route created above might be deleted
-                        h.cmd('ip route add default dev %s via %s' % (
-                            h.defaultIntf(), r.ip6))
-                        default = True
-                    break
-                if default:
-                    break
-            if not default:
+            if not h.createDefaultRoutes():
                 log.info('skipping %s , ' % h.name)
         log.info('\n')
 
@@ -548,6 +531,65 @@ class IPNet(Mininet):
         """Ping (IPv6-only) between first two hosts, useful for testing.
            return: ploss packet loss percentage"""
         return self.pingPair(use_v4=False)
+
+    def runFailurePlan(self, failure_plan: List[Tuple[str, str]]) \
+            -> List[IPIntf]:
+        """Run a failure plan
+
+            :param: A list of pairs of node names: links connecting these two
+                    links will be downed
+            :return: A list of interfaces that were downed
+        """
+        log.output("** Starting failure plan\n")
+        interfaces_down = []
+        for node1, node2 in failure_plan:
+            try:
+                links = self[node1].connectionsTo(self[node2])
+                for link in links:
+                    interfaces_down.extend(link)
+            except KeyError as e:
+                log.error("Node " + str(e) + " does not exist\n")
+                interfaces_down = []
+        for interface in interfaces_down:
+            interface.down(backup=True)
+            log.output("** Interface " + str(interface) + " down\n")
+        return interfaces_down
+
+    @staticmethod
+    def restoreIntfs(interfaces: List[IPIntf]):
+        """Restore interfaces
+
+            :param interfaces: the list of interfaces to restore
+        """
+        log.output("** starting restoring link\n")
+        for interface in interfaces:
+            interface.up(restore=True)
+            log.output("** interfaces " + str(interface) + " up\n")
+
+    def randomFailure(self, n: int, weak_links: Optional[List[IPLink]] = None)\
+            -> List[IPIntf]:
+        """Randomly down 'n' link
+
+            :param n: the number of link to be downed
+            :param weak_links: the list of links that can be downed; if set
+                               to None, every network link can be downed
+            :return: the list of interfaces which were downed
+        """
+        all_links = weak_links if weak_links is not None else self.links
+        number_of_links = len(all_links)
+        if n > number_of_links:
+            log.error("More link down requested than number of link"
+                      " that can be downed\n")
+            return []
+
+        downed_interfaces = []
+        down_links = random.sample(all_links, k=n)
+        for link in down_links:
+            for intf in [link.intf1, link.intf2]:
+                intf.down(backup=True)
+                log.output("** Interface " + str(intf) + " down\n")
+                downed_interfaces.append(intf)
+        return downed_interfaces
 
 
 class BroadcastDomain:
