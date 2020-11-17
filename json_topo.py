@@ -3,6 +3,7 @@
 import json
 import itertools
 
+from copy import deepcopy
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
@@ -18,6 +19,17 @@ def get_next_multiple(n, multiple):
     if n % multiple == 0: return n
     return (n // multiple + 1) * multiple
 
+def deep_merge(d1, d2):
+    """ merge 2 dict recursively, it the fileds are identical, d2 overwrites d1 """
+    result = deepcopy(d1)
+    for k, v in d2.items():
+        if k not in result:
+            result[k] = v
+        elif isinstance(v, dict) and isinstance(result[k], dict):
+            result[k] = deep_merge(result[k], v)
+        else:
+            result[k] = v
+    return result
 
 
 class JSONTopo(IPTopo):
@@ -438,7 +450,7 @@ class JSONTopo(IPTopo):
             default_daemons = {d : {} for d in default_daemons}
         if isinstance(daemons, list): daemons = {d : {} for d in daemons}
         
-        daemons = {** default_daemons, ** daemons}
+        daemons = deep_merge(default_daemons, daemons)
         for d, d_config in daemons.items():
             if self.debug: print("Adding daemon {} with config {}".format(d, d_config))
             if d == 'ospf':
@@ -552,21 +564,29 @@ class JSONTopo(IPTopo):
             all_al4 = AccessList(family='ipv4', name='allv4', entries=('any',))
             all_al6 = AccessList(family='ipv6', name='allv6', entries=('any',))
             
-
+            #route-map in
             if "set_local_pref" in communities_config:
                 for x in self.__routers:
                     order_rm = 10
-                    for community_value in communities_config["set_local_pref"]:
+                    for community_value in communities_config.get("set_local_pref", []):
                         local_pref = communities_config["set_local_pref"][community_value]
                         community = CommunityList("loc-pref"+str(community_value), community=community_value)
                         router.get_config(BGP).set_local_pref(local_pref,from_peer=x, matching=(community,), name="rm", order=order_rm)
                         order_rm += 10
                     router.get_config(BGP).set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=order_rm)
 
+            #route-map out
+            for community_value in communities_config.get("do_not_receive", []):
+                for router_y in self.__routers:
+                    community = CommunityList("outboundBlacklist_"+str(community_value), community=community_value)
+                    self.__routers[router_y].get_config(BGP).deny(name=router, to_peer=router, matching=(community,), order=10)
+                    self.__routers[router_y].get_config(BGP).permit(name=router, to_peer=router, matching=(all_al4, all_al6), order=20)
             if "send_community" in communities_config:
                 for community_value in communities_config["send_community"]:
                     for router_y in self.__routers:
                         router.get_config(BGP).set_community(community_value, to_peer=router_y, matching=(all_al4, all_al6))
+                
+            
         
     def _build_as(self, * args, ** ases):
         for i, (as_name, as_config) in enumerate(ases.items()):
