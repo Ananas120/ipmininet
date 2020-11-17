@@ -1,20 +1,21 @@
 """This modules defines a L3 router class,
    with a modular config system."""
+import shlex
 import subprocess
 import sys
 import time
 from ipaddress import IPv4Interface, IPv6Interface
-from typing import Type, Optional, Tuple, Union, Dict, List, Sequence, Set
-
-from ipmininet import DEBUG_FLAG
-from ipmininet.utils import L3Router, realIntfList, otherIntf
-from ipmininet.link import IPIntf
-from .config import BasicRouterConfig, NodeConfig, RouterConfig
+from typing import Type, Optional, Tuple, Union, Dict, List, Sequence
 
 import mininet.clean
-from mininet.node import Node, Host
 from mininet.log import lg
-import shlex
+from mininet.node import Node, Host
+
+from ipmininet import DEBUG_FLAG
+from ipmininet.link import IPIntf
+from ipmininet.utils import L3Router, realIntfList, otherIntf
+from .config import BasicRouterConfig, NodeConfig, RouterConfig, \
+    OpenrRouterConfig
 
 
 class ProcessHelper:
@@ -76,6 +77,7 @@ class IPNode(Node):
                  process_manager: Type[ProcessHelper] = ProcessHelper,
                  use_v4=True,
                  use_v6=True,
+                 create_logdirs=True,
                  *args, **kwargs):
         """Most of the heavy lifting for this node should happen in the
         associated config object.
@@ -92,6 +94,7 @@ class IPNode(Node):
         self.use_v6 = use_v6
         self.cwd = cwd
         self._old_sysctl = {}  # type: Dict[str, Union[str, int]]
+        self.create_logdirs = create_logdirs
         if isinstance(config, tuple):
             try:
                 self.nconfig = config[0](self, **config[1])
@@ -110,6 +113,8 @@ class IPNode(Node):
         # Check them
         err_code = False
         for d in self.nconfig.daemons:
+            if self.create_logdirs and d.logdir:
+                self._mklogdirs(d.logdir)
             out, err, code = self._processes.pexec(shlex.split(d.dry_run))
             err_code = err_code or code
             if code:
@@ -124,6 +129,19 @@ class IPNode(Node):
         # Set relevant sysctls
         for opt, val in self.nconfig.sysctl:
             self._old_sysctl[opt] = self._set_sysctl(opt, val)
+
+        # wait until NDP has finished to check each IPv6 addresses assigned
+        # to the interface of the node.
+        # The command lists addresses failing duplicate address detection (IPv6)
+        # If any, it waits until all addresses has been checked
+        lg.debug(self._processes.node.name, 'Checking for any "tentative" addresses')
+        tentative_cmd = "ip addr show tentative"
+        tentative_chk = self._processes.call(tentative_cmd)
+        while tentative_chk is not None and tentative_chk != '':
+            time.sleep(.5)
+            tentative_chk = self._processes.call(tentative_cmd)
+        lg.debug(self._processes.node.name, 'All IPv6 addresses has passed the Duplicate address detection mechanism')
+
         # Fire up all daemons
         for d in self.nconfig.daemons:
             self._processes.popen(shlex.split(d.startup_line))
@@ -153,6 +171,23 @@ class IPNode(Node):
         if v != val:
             self._processes.call('sysctl', '-w', '%s=%s' % (key, val))
         return v
+
+    def _mklogdirs(self, logdir) -> Tuple[str, str, int]:
+        """Creates directories for the given logdir.
+
+           :param logdir: The log directory path to create
+           :return: (stdout, stderr, return_code)
+        """
+        lg.debug('{}: Creating logdir {}.\n'.format(self.name, logdir))
+        cmd = 'mkdir -p {}'.format(logdir)
+        stdout, stderr, return_code = self._processes.pexec(shlex.split(cmd))
+        if not return_code:
+            lg.debug('{}: Logdir {} successfully created.\n'.format(self.name,
+                                                                    logdir))
+        else:
+            lg.error('{}: Could not create logdir {}. Stderr: \n'
+                     '{}\n'.format(self.name, logdir, stderr))
+        return (stdout, stderr, return_code)
 
     def get(self, key, val=None):
         """Check for a given key in the node parameters"""
@@ -207,3 +242,23 @@ class Router(IPNode, L3Router):
     @property
     def asn(self) -> int:
         return self.get('asn')
+
+
+class OpenrRouter(Router):
+    """OpenR router with private '/tmp' dir to handle unix sockets created by
+       the OpenR daemon"""
+
+    def __init__(self, name, *args,
+                 config: Type[OpenrRouterConfig],
+                 lo_addresses: Optional[Sequence[
+                     Union[str, IPv4Interface, IPv6Interface]]] = None,
+                 privateDirs=['/tmp'],
+                 **kwargs):
+        if not lo_addresses:
+            lo_addresses = ()
+        super().__init__(name,
+                         config=config,
+                         lo_addresses=lo_addresses,
+                         password=None,
+                         privateDirs=privateDirs,
+                         *args, **kwargs)
