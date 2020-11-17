@@ -609,6 +609,8 @@ class JSONTopo(IPTopo):
             if as_config.get('linked', False):
                 for (r1, r2) in itertools.combinations(self.get_routers(as_name), 2):
                     self.add_new_link(r1, r2)
+            if as_config.get('bgp_fullmesh', False):
+                self.add_bgp_fullmesh(1, self.__as[as_name]['routers'])
 
             
             self.addAS(asn, self.get_routers(as_name) + self.get_anycast_servers(as_name))
