@@ -18,12 +18,8 @@ router bgp ${node.bgpd.asn}
     neighbor ${n.peer} remote-as ${n.asn}
     neighbor ${n.peer} port ${n.port}
     neighbor ${n.peer} description ${n.description}
-    neighbor ${n.peer} password ${n.md5}
-    % if n.ebgp:
-        neighbor ${n.peer} ttl-security hops 1
-    % endif
     % if n.ebgp_multihop:
-        neighbor ${n.peer} ebgp-multihop
+    neighbor ${n.peer} ebgp-multihop
     % endif
     <%block name="neighbor"/>
 % endfor
