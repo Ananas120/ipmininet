@@ -1,0 +1,342 @@
+{
+    "subnets" : {
+        "net_ovh" : {
+            "ipv6" : "beaf:cafe:babe:/48",
+            "ipv4" : "204.32.46./24"
+        },
+        "net_mil" : {
+            "ipv6" : "{net_ovh}0500::/56",
+            "ipv4" : "{net_ovh}112/28",
+            "nodes" : ["milan"]
+        },
+        "net_zrh" : {
+            "ipv6" : "{net_ovh}0400::/56",
+            "ipv4" : "{net_ovh}96/28",
+            "nodes" : ["zurich"]
+        },
+        "net_sbg" : {
+            "ipv6" : "{net_ovh}0100::/56",
+            "ipv4" : "{net_ovh}0/28",
+            "nodes" : ["sbg-g1",  "sbg-g2"]
+        },
+        "net_fra" : {
+            "ipv6" : "{net_ovh}0300::/56",
+            "ipv4" : "{net_ovh}64/28",
+            "nodes" : ["fra-5_fr5",  "fra-1_fr5"]
+        },
+        "net_rbx" : {
+            "ipv6" : "{net_ovh}0600::/56",
+            "ipv4" : "{net_ovh}128/28",
+            "nodes" : ["rbx-g2",  "rbx-g1"]
+        },
+        "net_par" : {
+            "ipv6" : "{net_ovh}0200::/56",
+            "ipv4" : "{net_ovh}32/28",
+            "nodes" : ["par-th2", "par-gsw"]
+        },
+        "net_ams" : {
+            "ipv6" : "{net_ovh}0700::/56",
+            "ipv4" : "{net_ovh}144/28",
+            "nodes" : ["ams-5", "ams-1"]
+        },
+        "net_waw" : {
+            "ipv6" : "{net_ovh}0800::/56",
+            "ipv4" : "{net_ovh}160/28",
+            "nodes" : ["varsovie"]
+        },
+        "net_prg" : {
+            "ipv6" : "{net_ovh}0a00::/56",
+            "ipv4" : "{net_ovh}192/28",
+            "nodes" : ["prague"]
+        },
+        "net_vie" : {
+            "ipv6" : "{net_ovh}0b00::/56",
+            "ipv4" : "{net_ovh}208/28",
+            "nodes" : ["vienne"]
+        },
+        
+        
+        "net_telia" : {
+            "ipv6" : "beaf:cafe:baba::/48",
+            "ipv4" : "204.32.47.0/24",
+            "nodes" : ["telia_fra", "telia_mil", "telia_var", "telia_ams"]
+        },
+        "net_upc" : {
+            "ipv6" : "beaf:cafe:bab1::/48",
+            "ipv4" : "204.32.48.0/24",
+            "nodes" : ["upc_var", "upc_vie", "upc_fra", "upc_zrh", "upc_ams"]
+        },
+        "net_sea" : {
+            "ipv6" : "beaf:cafe:5eab::/48",
+            "ipv4" : "204.32.49.0/24",
+            "nodes" : ["sea_fra", "sea_mil", "sea_par"]
+        },
+        "net_level3" : {
+            "ipv6" : "3333:3333:3333::/48",
+            "ipv4" : "204.32.33.0/24",
+            "nodes" : ["level3_fra", "level3_par"]
+        },
+        "net_google" : {
+            "ipv6" : "6666:6666:6666::/48",
+            "ipv4" : "204.32.66.0/24",
+            "nodes" : ["google_fra", "google_par"]
+        },
+        "net_cogent" : {
+            "ipv6" : "beaf:cafe:c0c0::/48",
+            "ipv4" : "204.32.50.0/24",
+            "nodes" : ["cogent_par", "cogent_ams", "cogent_var"]
+        },
+        "net_amazon" : {
+            "ipv6" : "aaaa:aaaa:aaaa::/48",
+            "ipv4" : "204.32.40.0/24",
+            "nodes" : ["amazon_par"]
+        },
+        "net_core" : {
+            "ipv6" : "beaf:cafe:c05e::/48",
+            "ipv4" : "204.32.11.0/24",
+            "nodes" : ["bbone_par", "bbone_fra"]
+        }
+    },
+    "AS" : {
+        "OVH" : {
+            "routers" : {
+                "milan" : {
+                    "clients" : ["zurich", "sbg-g2"],
+                    "peers" : ["sbg-g1"],
+                    "niveau" : 2,
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:408"]}}}
+                 },
+                "zurich": {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:410"]}}}},
+                "sbg-g1" : {
+                    "clients" : ["sbg-g2", "par-gsw", "zurich"],
+                    "niveau" : 2,
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:409"]}}}
+                },
+                "sbg-g2": {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:409"]}}}},
+                "par-th2": {
+                    "clients" : ["par-gsw", "sbg-g1", "rbx-g1", "rbx-g2", "ams-5"],
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:401"]}}}
+                },
+                "par-gsw" : {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:401"]}}}},
+                "rbx-g2" : {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:406"]}}}},
+                "rbx-g1" : {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:406"]}}}},
+                "fra-5_fr5": {
+                    "clients" : ["sbg-g1", "rbx-g2", "ams-5", "vienne", "varsovie", "fra-1_fr5"],
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:404"]}}}
+                },
+                "ams-5" : {
+                    "peers" : ["varsovie", "vienne"],
+                    "clients" : ["ams-1", "rbx-g2", "rbx-g1", "fra-1_fr5"],
+                    "niveau" : 2,
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:402"]}}}
+                },
+                "varsovie": {
+                    "clients" : ["prague", "ams-1"],
+                    "niveau" : 2,
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:405"]}}}
+                },
+                "vienne" : {
+                    "clients" : ["prague"],
+                    "niveau" : 2,
+                    "daemons":{"bgp":{"communities": {"do_not_receive": ["16276:403"]}}}
+
+                 },
+                "fra-1_fr5": {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:404"]}}}},
+                "prague" : {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:407"]}}}},
+                "ams-1" : {"daemons":{"bgp":{"communities": {"do_not_receive": ["16276:402"]}}}}
+            },
+            "rconfig" : {
+                "daemons" : {"ospf": {}, "ospf6":{}, 
+                "bgp": {
+                    "communities": {
+                        "set_local_pref": {
+                            "16276:120": 120,
+                            "16276:90": 90,
+                            "16276:80": 80
+                        }
+                    }
+                }
+                }
+            },
+            "anycast" : [
+                {
+                    "addresses" : {
+                        "ipv4": "10.10.10.10/32", 
+                        "ipv6": "10::10/128"
+                    },
+                    "nodes" : ["milan", "varsovie", "ams-1"]
+                }
+            ]
+        },
+        "Telia" : {
+            "routers" : {
+                "telia_fra" : {},
+                "telia_mil" : {},
+                "telia_var" : {},
+                "telia_ams" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        },
+        "UPC" : {
+            "routers" : {
+                "upc_var" : {},
+                "upc_vie" : {},
+                "upc_fra" : {"clients" : ["upc_ams","upc_vie", "upc_fra", "upc_zrh"], "daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:120", "16276:404"]
+                }}}},
+                "upc_zrh" : {"daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:90", "16276:404"]
+                }}}},
+                "upc_ams" : {"daemons": {"bgp" : {"communities": {
+                    "send_community": ["16276:80", "16276:404"]
+                }}}}
+            },
+            "rconfig" : {
+                "daemons" : {
+                    "ospf" : {}, "ospf6" : {}, "bgp" : {"communities":{"send_community":["16276:404"]}}
+                }
+            },
+            "linked" : true
+        },
+        "Seabone" : {
+            "routers" : {
+                "sea_fra" : {},
+                "sea_mil" : {},
+                "sea_par" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        },
+        "level3" : {
+            "routers" : {
+                "level3_fra" : {},
+                "level3_par" : {}
+            },
+            
+            "rconfig" : {
+                "daemons" : {"ospf":{}, "ospf6":{}, "bgp":{}}
+            },
+            "linked" : true
+        },
+        "google" : {
+            "routers" : {
+                "google_fra" : {},
+                "google_par" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        },
+        "cogent" : {
+            "routers" : {
+                "cogent_par" : {},
+                "cogent_ams" : {},
+                "cogent_var" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        },
+        "amazon" : {
+            "routers" : {
+                "amazon_par" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        },
+        "core-backbone" : {
+            "routers" : {
+                "bbone_par" : {},
+                "bbone_fra" : {}
+            },
+            "rconfig" : {
+                "daemons" : ["ospf", "ospf6", "bgp"]
+            },
+            "linked" : true
+        }
+    },
+    "links" : {
+        "milan"    : [
+            "zurich",
+            ["sbg-g1", {"igp_metric": 4}], 
+            ["sbg-g2", {"igp_metric": 4}]
+        ],
+        "zurich"   : [
+            ["sbg-g1", {"igp_metric": 3}]
+        ],
+        "sbg-g1"   : [
+            "sbg-g2",
+            "par-th2",
+            ["fra-1_fr5", {"igp_metric" : 2}]
+        ],
+        "sbg-g2"   : [
+            ["par-gsw", {"igp_metric" : 2}],
+            ["fra-5_fr5", {"igp_metric": 2}]
+        ],
+        "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],
+        "par-gsw"  : ["rbx-g2"],
+        "rbx-g2"   : [
+            "rbx-g1",
+            ["ams-5", {"igp_metric" : 2}]
+        ],
+        "rbx-g1"   : [],
+        
+        "fra-5_fr5": [
+            "fra-1_fr5",
+            ["rbx-g2", {"igp_metric" : 3}],
+            ["ams-5", {"igp_metric" : 2}], 
+            ["vienne", {"igp_metric": 2}]
+        ],
+        "fra-1_fr5": {
+            "igp_metric" : 2,
+            "voisins" : ["ams-1", "rbx-g1"]
+        },
+        "varsovie" : {
+            "igp_metric" : 4,
+            "voisins" : ["fra-5_fr5", "prague", "ams-1"]
+        },
+        "prague"   : ["vienne"],
+        "vienne"   : [],
+        "ams-5"    : ["ams-1"],
+        "ams-1"    : [],
+        
+        "telia_fra"   : ["fra-1_fr5", "fra-5_fr5"],
+        "telia_mil"   : ["milan"],
+        "telia_var"   : ["varsovie"],
+        "telia_ams"   : ["ams-1"],
+        
+        "upc_var"     : ["varsovie"],
+        "upc_vie"     : ["vienne"],
+        "upc_fra"     : ["fra-5_fr5", "upc_ams"],
+        "upc_zrh"     : ["zurich"],
+        "upc_ams"     : ["ams-5"],
+        
+        "sea_fra" : ["fra-5_fr5"],
+        "sea_mil" : ["milan"],
+        "sea_par" : ["par-th2"],
+        
+        "level3_fra"  : ["fra-5_fr5"],
+        "level3_par"  : ["par-gsw"],
+        
+        "google_fra"  : ["fra-5_fr5"],
+        "google_par"  : ["par-gsw","par-th2"],
+        
+        "cogent_par"  : ["par-gsw","par-th2"],
+        "cogent_ams"  : ["ams-1"],
+        "cogent_var"  : ["varsovie"],
+        
+        "amazon_par"  : ["par-th2"],
+        
+        "bbone_par": ["par-th2"],
+        "bbone_fra": ["fra-5_fr5"]
+    }
+}
