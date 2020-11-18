@@ -20,6 +20,7 @@ router bgp ${node.bgpd.asn}
     neighbor ${n.peer} description ${n.description}
     % if n.ebgp :
     	neighbor ${n.peer} ttl-security hops 1
+    %endif
     % if n.ebgp_multihop:
     	neighbor ${n.peer} ebgp-multihop
     % endif
