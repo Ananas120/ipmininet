@@ -146,8 +146,8 @@ def ebgp_session(topo: 'IPTopo', a: 'RouterDescription', b: 'RouterDescription',
             .filter('import-all', policy=PERMIT, from_peer=a, to_peer=b, matching=(ip4_pfxl, ip6_pfxl)) \
             .filter('export-all', policy=PERMIT, from_peer=b, to_peer=a, matching=(ip4_pfxl, ip6_pfxl))
         b.get_config(BGP) \
-            .filter('import-all2', policy=PERMIT, from_peer=a, to_peer=b, matching=(ip4_pfxl, ip6_pfxl)) \
-            .filter('export-all2', policy=PERMIT, from_peer=b, to_peer=a, matching=(ip4_pfxl, ip6_pfxl))
+            .filter('import-all', policy=PERMIT, from_peer=a, to_peer=b, matching=(ip4_pfxl, ip6_pfxl)) \
+            .filter('export-all', policy=PERMIT, from_peer=b, to_peer=a, matching=(ip4_pfxl, ip6_pfxl))
 
     bgp_peering(topo, a, b)
     topo.linkInfo(a, b)['igp_passive'] = True
@@ -196,7 +196,7 @@ class BGPConfig:
                       from_peer: Optional[str] = None,
                       to_peer: Optional[str] = None,
                       matching: Sequence[Union[AccessList, CommunityList]] =
-                      ()) -> 'BGPConfig':
+                      (), name=None, order=10) -> 'BGPConfig':
         """Set community on a routes received from 'from_peer'
          and routes sent to 'to_peer' on routes matching
          all of the access and community lists in 'matching'
@@ -212,12 +212,12 @@ class BGPConfig:
             self.add_set_action(peer=to_peer,
                                 set_action=RouteMapSetAction('community',
                                                              community),
-                                matching=matching, direction='out')
+                                matching=matching, direction='out', name=name, order=order)
         if from_peer is not None:
             self.add_set_action(peer=from_peer,
                                 set_action=RouteMapSetAction('community',
                                                              community),
-                                matching=matching, direction='in')
+                                matching=matching, direction='in', name=name, order=order)
         return self
 
     def filter(self, name: Optional[str] = None, policy=DENY,

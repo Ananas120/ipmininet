@@ -576,17 +576,23 @@ class JSONTopo(IPTopo):
                     router.get_config(BGP).set_local_pref(100, from_peer=x, matching=(all_al4, all_al6,),name='rm', order=order_rm)
 
             #route-map out
-            for community_value in communities_config.get("do_not_receive", []):
+            for community_value in communities_config.get("do_not_advertise", []):
                 for router_y in self.__routers:
-                    community = CommunityList("outboundBlacklist_"+str(community_value), community=community_value)
-                    self.__routers[router_y].get_config(BGP).deny(name=router, to_peer=router, matching=(community,), order=10)
-                    self.__routers[router_y].get_config(BGP).permit(name=router, to_peer=router, matching=(all_al4, all_al6), order=20)
+                    community = CommunityList("outbound_blacklist_"+str(community_value), community=community_value)
+                    as_1, as_2 = self.get_as_of(router), self.get_as_of(router_y)
+                    if as_1 != as_2: #Do not advertise to peer and customer but advertise inside of our AS
+                        router.get_config(BGP).deny(name="export-all", to_peer=router_y, matching=(community,), order=5)
+
             if "send_community" in communities_config:
-                for community_value in communities_config["send_community"]:
                     for router_y in self.__routers:
-                        router.get_config(BGP).set_community(community_value, to_peer=router_y, matching=(all_al4, all_al6))
+                        if communities_config["send_community"] in ["16276:80","16276:90", "16276:120"]:
+                            print("COUCOUCUUUU")
+                            router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-al", matching=(all_al4, all_al6))
+                        else:
+                            router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-all", matching=(all_al4, all_al6))
+
                 
-            
+    
         
     def _build_as(self, * args, ** ases):
         for i, (as_name, as_config) in enumerate(ases.items()):
