@@ -585,11 +585,7 @@ class JSONTopo(IPTopo):
 
             if "send_community" in communities_config:
                     for router_y in self.__routers:
-                        if communities_config["send_community"] in ["16276:80","16276:90", "16276:120"]:
-                            router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-al", matching=(all_al4, all_al6))
-                        else:
                             router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-all", matching=(all_al4, all_al6))
-
                 
     
         

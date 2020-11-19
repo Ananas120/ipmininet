@@ -339,7 +339,7 @@
         "sea_par" : ["par-th2"],
         
         "level3_fra"  : ["fra-5_fr5"],
-        "level3_par"  : ["par-gsw"],
+        "level3_par"  : ["par-th2"],
         
         "google_fra"  : ["fra-5_fr5"],
         "google_par"  : ["par-gsw","par-th2"],
