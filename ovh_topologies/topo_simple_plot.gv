@@ -1,0 +1,191 @@
+graph "Network Topology" {
+	compound=true rank=same
+	subgraph cluster_OVH {
+		label=OVH
+		subgraph OVH_rr {
+			milan [shape=doublecircle]
+			"sbg-g1" [shape=doublecircle]
+			"par-th2" [shape=doublecircle]
+			"fra-5_fr5" [shape=doublecircle]
+			"ams-5" [shape=doublecircle]
+			varsovie [shape=doublecircle]
+			vienne [shape=doublecircle]
+		}
+		subgraph OVHrouteurs {
+			rank=same
+			zurich [shape=circle]
+			"sbg-g2" [shape=circle]
+			"par-gsw" [shape=circle]
+			"rbx-g2" [shape=circle]
+			"rbx-g1" [shape=circle]
+			"fra-1_fr5" [shape=circle]
+			prague [shape=circle]
+			"ams-1" [shape=circle]
+		}
+		subgraph OVH_hosts {
+			rank=same
+		}
+		milan -- zurich [weight=5]
+		milan -- "sbg-g1" [weight=5]
+		milan -- "sbg-g2" [weight=5]
+		zurich -- "sbg-g1" [weight=5]
+		"sbg-g1" -- "sbg-g2" [weight=5]
+		"sbg-g1" -- "par-th2" [weight=5]
+		"sbg-g1" -- "fra-1_fr5" [weight=5]
+		"sbg-g2" -- "par-gsw" [weight=5]
+		"sbg-g2" -- "fra-5_fr5" [weight=5]
+		"par-th2" -- "rbx-g1" [weight=5]
+		"par-th2" -- "rbx-g2" [weight=5]
+		"par-th2" -- "par-gsw" [weight=5]
+		"par-gsw" -- "rbx-g2" [weight=5]
+		"rbx-g2" -- "rbx-g1" [weight=5]
+		"rbx-g2" -- "ams-5" [weight=5]
+		"fra-5_fr5" -- "fra-1_fr5" [weight=5]
+		"fra-5_fr5" -- "rbx-g2" [weight=5]
+		"fra-5_fr5" -- "ams-5" [weight=5]
+		"fra-5_fr5" -- vienne [weight=5]
+		"fra-1_fr5" -- "ams-1" [label="IGP = 2" weight=4]
+		"fra-1_fr5" -- "rbx-g1" [label="IGP = 2" weight=4]
+		varsovie -- "fra-5_fr5" [label="IGP = 4" weight=4]
+		varsovie -- prague [label="IGP = 4" weight=4]
+		varsovie -- "ams-1" [label="IGP = 4" weight=4]
+		prague -- vienne [weight=5]
+		"ams-5" -- "ams-1" [weight=5]
+	}
+	subgraph cluster_Telia {
+		label=Telia
+		subgraph Telia_rr {
+		}
+		subgraph Teliarouteurs {
+			rank=same
+			telia_fra [shape=circle]
+			telia_mil [shape=circle]
+			telia_var [shape=circle]
+			telia_ams [shape=circle]
+		}
+		subgraph Telia_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_UPC {
+		label=UPC
+		subgraph UPC_rr {
+		}
+		subgraph UPCrouteurs {
+			rank=same
+			upc_var [shape=circle]
+			upc_vie [shape=circle]
+			upc_fra [shape=circle]
+			upc_zrh [shape=circle]
+			upc_ams [shape=circle]
+		}
+		subgraph UPC_hosts {
+			rank=same
+		}
+		upc_fra -- upc_ams [weight=5]
+	}
+	subgraph cluster_Seabone {
+		label=Seabone
+		subgraph Seabone_rr {
+		}
+		subgraph Seabonerouteurs {
+			rank=same
+			sea_fra [shape=circle]
+			sea_mil [shape=circle]
+			sea_par [shape=circle]
+		}
+		subgraph Seabone_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_level3 {
+		label=level3
+		subgraph level3_rr {
+		}
+		subgraph level3routeurs {
+			rank=same
+			level3_fra [shape=circle]
+			level3_par [shape=circle]
+		}
+		subgraph level3_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_google {
+		label=google
+		subgraph google_rr {
+		}
+		subgraph googlerouteurs {
+			rank=same
+			google_fra [shape=circle]
+			google_par [shape=circle]
+		}
+		subgraph google_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_cogent {
+		label=cogent
+		subgraph cogent_rr {
+		}
+		subgraph cogentrouteurs {
+			rank=same
+			cogent_par [shape=circle]
+			cogent_ams [shape=circle]
+			cogent_var [shape=circle]
+		}
+		subgraph cogent_hosts {
+			rank=same
+		}
+	}
+	subgraph cluster_amazon {
+		label=amazon
+		subgraph amazon_rr {
+		}
+		subgraph amazonrouteurs {
+			rank=same
+			amazon_par [shape=circle]
+		}
+		subgraph amazon_hosts {
+			rank=same
+		}
+	}
+	subgraph "cluster_core-backbone" {
+		label="core-backbone"
+		subgraph "core-backbone_rr" {
+		}
+		subgraph "core-backbonerouteurs" {
+			rank=same
+			bbone_par [shape=circle]
+			bbone_fra [shape=circle]
+		}
+		subgraph "core-backbone_hosts" {
+			rank=same
+		}
+	}
+	telia_fra -- "fra-1_fr5" [color=red weight=5]
+	telia_fra -- "fra-5_fr5" [color=red weight=5]
+	telia_mil -- milan [color=red weight=5]
+	telia_var -- varsovie [color=red weight=5]
+	telia_ams -- "ams-1" [color=red weight=5]
+	upc_var -- varsovie [color=red weight=5]
+	upc_vie -- vienne [color=red weight=5]
+	upc_fra -- "fra-5_fr5" [color=red weight=5]
+	upc_zrh -- zurich [color=red weight=5]
+	upc_ams -- "ams-5" [color=red weight=5]
+	sea_fra -- "fra-5_fr5" [color=red weight=5]
+	sea_mil -- milan [color=red weight=5]
+	sea_par -- "par-th2" [color=red weight=5]
+	level3_fra -- "fra-5_fr5" [color=red weight=5]
+	level3_par -- "par-gsw" [color=red weight=5]
+	google_fra -- "fra-5_fr5" [color=red weight=5]
+	google_par -- "par-gsw" [color=red weight=5]
+	google_par -- "par-th2" [color=red weight=5]
+	cogent_par -- "par-gsw" [color=red weight=5]
+	cogent_par -- "par-th2" [color=red weight=5]
+	cogent_ams -- "ams-1" [color=red weight=5]
+	cogent_var -- varsovie [color=red weight=5]
+	amazon_par -- "par-th2" [color=red weight=5]
+	bbone_par -- "par-th2" [color=red weight=5]
+	bbone_fra -- "fra-5_fr5" [color=red weight=5]
+}

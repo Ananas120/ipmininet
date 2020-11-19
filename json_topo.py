@@ -524,7 +524,7 @@ class JSONTopo(IPTopo):
         return link
     
     def add_host_to_router(self, router, n = 1):
-        """ Add a fictitious host to router """
+        """ Add a fictitious host to the specified router """
         as_name = self.get_as_of(router)
         for i in range(n):
             h_name = '{}_{}'.format(router, i)[-9:]
@@ -543,7 +543,11 @@ class JSONTopo(IPTopo):
             
     
     def build(self, *args, **kwargs):
-        """ Build the topology according to the given configuration file """
+        """ 
+            Build the topology according to the given configuration file
+            
+            See the README.md file to have a description of the JSON format needed. 
+        """
         with open(self.filename, 'r', encoding = 'utf-8') as file:
             config = file.read()
         config = json.loads(config)
@@ -585,11 +589,7 @@ class JSONTopo(IPTopo):
 
             if "send_community" in communities_config:
                     for router_y in self.__routers:
-                        if communities_config["send_community"] in ["16276:80","16276:90", "16276:120"]:
-                            router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-al", matching=(all_al4, all_al6))
-                        else:
                             router.get_config(BGP).set_community(communities_config["send_community"], to_peer=router_y, name="import-all", matching=(all_al4, all_al6))
-
                 
     
         
@@ -760,7 +760,7 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'ovh_topologies/topo_communities.json',
+        filename = 'ovh_topologies/topo_simple.json',
         debug = True, name = 'OVH Europa topology',
         add_hosts = True, infer_ip = True
     )

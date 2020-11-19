@@ -49,3 +49,21 @@ Processing '/etc/joe/editorrc'...
 Processing '/etc/joe/ftyperc'...
 Finished processing /etc/joe/ftyperc
 Finished processing /etc/joe/editorrc
+
+*** These modified files were found in JOE when it aborted on Thu Nov 19 11:20:39 2020
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+hex
+
+*** File '(Unnamed)'
+root
+
+*** File '(Unnamed)'
+/home/vagrant/ipmininet/.git/MERGE_MSG
+
+*** File '* Startup Log *'
+Processing '/etc/joe/editorrc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
