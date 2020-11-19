@@ -54,6 +54,9 @@ class SecurityTopo(IPTopo):
         - s1 and s2 must be routers because daemons (OSPF, OSPF6and BGP) are not available on hosts. 
         
         Security point of view :
+	 3 things :  create the ip rules 
+                     add the iptables daemon
+                     set the ttl of routers with an eBGP connection to 255
     """
     def build(self, * args, ** kwargs):
         def add_daemon(* routers, ospf = True, bgp = True):
@@ -67,15 +70,10 @@ class SecurityTopo(IPTopo):
         
         server_ip = ["10.10.10.10/32", "10::10/128"]
         
-        # TODO
-        # we set an ip_rule that drops all packets for which ttl < 255 is true
-        # this rule has to be applied only on eBGP links.
-        # ip default ttl pour forcer le ttl des voisins bgp
-        # p expect
         # vérifier que les paquets sur le port de bgp respectent le ttl
         #ip_rule = [InputFilter(default="DROP", rules=[
         #                Deny(proto='tcp', dport='179', match='ttl --ttl-lt 255')])]
-        #ip6_rule = [Rule('-A INPUT -p tcp --dport 179 -m hl --hl-lt 255 -j DROP')]
+        ip6_rule = [Rule('-A INPUT -p tcp --dport 179 -m hl --hl-lt 255 -j DROP')]
         
         """ Routers """
         as1_r1, as1_r2, as1_rr = self.addRouters("as1_r1", "as1_r2", "as1_rr")
@@ -105,8 +103,7 @@ class SecurityTopo(IPTopo):
         
         # we add the ip_rule to the router of our AS that is connected to the other AS
         #as1_rr.addDaemon(IPTables, rules = ip_rule)
-        #as1_rr.addDaemon(IP6Tables, rules = ip6_rule)
-        #as1_rr.cmd('sudo sysctl net.ipv4.ip_default_ttl=255')
+        as1_rr.addDaemon(IP6Tables, rules = ip6_rule)
         
         """ Links """
         
@@ -122,9 +119,6 @@ class SecurityTopo(IPTopo):
 
         ebgp_session(self, as1_rr, as2_r1, link_type=None)
 
-        #print('super.get : ', hasattr(super, 'get'))
-        #print('router cmd: ', hasattr(as1_rr, 'cmd'))
-
         super().build(*args, **kwargs)
         
 	
@@ -139,7 +133,6 @@ if __name__ == '__main__':
     #print(help(h.setIP))
     #print(help(h))
     net.get('as1_rr').cmd('sudo sysctl net.ipv4.ip_default_ttl=255')
-    #net.get('as2_r1').cmd('sudo sysctl net.ipv4.ip_default_ttl=200')
     try:
         net.start()
         IPCLI(net)
