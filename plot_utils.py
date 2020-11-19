@@ -9,7 +9,7 @@ R_SHAPE     = 'circle'
 RR_SHAPE    = 'doublecircle'
 HOST_SHAPE  = 'egg'
 
-def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwargs):
+def to_graphviz(topo_config, filename = 'topo_plot.gv', ebgp_color = 'red', kwargs = {}, ** sub_kwargs):
     """
         Function to convert BGP topology (configured as a json file) to a pygraphviz Grav instance. 
         
@@ -72,7 +72,7 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
         if not isinstance(voisins, (list, tuple)): voisins = [voisins]
         
         for voisin in voisins:
-            voisin_configconfig = {}
+            voisin_config = {}
             if isinstance(voisin, list):
                 voisin, voisin_configconfig = voisin
             voisin_config = {** config, ** voisin_config}
@@ -83,16 +83,18 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
                 return None
             as_2 = as_2[0]
             
-            kwargs = {'label' : [], 'weight' : 5}
+            kwargs = {'label' : [], 'weight' : '5'}
             if 'igp_metric' in voisin_config:
                 kwargs['label'].append('IGP = {}'.format(voisin_config['igp_metric']))
-                kwargs['weight'] = 5 - kwargs.get('igp_metric', 1)
+                kwargs['weight'] = str(5 - kwargs.get('igp_metric', 1))
             if 'med' in voisin_config:
                 kwargs['label'].append('MED = {}'.format(voisin_config['med']))
-                kwargs['weight'] = 5 - kwargs.get('med', 1)
+                kwargs['weight'] = str(5 - kwargs.get('med', 1))
             if 'subnet' in voisin_config:
                 kwargs['label'].append('{}'.format(voisin_config['subnet']))
-            kwargs['label'] = '\n'.join(kwargs['label'])
+            if len(kwargs['label']) == 0: kwargs.pop('label')
+            else: kwargs['label'] = '\n'.join(kwargs['label'])
+            
             
             
             edge = [node, voisin, kwargs]
@@ -136,7 +138,7 @@ def to_graphviz(topo_config, filename = 'topo_plot.gv', kwargs = {}, ** sub_kwar
     
     # Make links between nodes from different AS (eBGP connections)
     for start, end, config in ebgp_edges:
+        config['color'] = ebgp_color
         g.edge(start, end, ** config)
     
     return g
-
