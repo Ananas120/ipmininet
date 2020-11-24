@@ -1,4 +1,4 @@
-# LINGI2145 project - group 10. 
+# LINGI2145 project. 
 
 This is a fork from [ipmininet](https://github.com/cnp3/ipmininet) for the LINGI2145 course project. 
 
