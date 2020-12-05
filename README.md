@@ -31,6 +31,14 @@ In the `json_topo.py` file, you can change, at the end, the arguments of the `JS
 - `add_hosts`   : the number of fictitious hosts to add and where (useful to test the `ping6all` command). 
 - `infer_ip`    : whether to generate loopback / link addresses. 
 
+Note : you can change the `filename` argument by another topology file : 
+- `topo_simple.json`    : simple topology without communities / security, just anycast. 
+- `topo_communities.json`   : topology with anycast an communities
+- `topo_security.json`  : topology with anycast and security
+- `topo_complete.json`  : topology with anycast, communities and security
+
+We decided to create multiple topologies in order to test that our modification in the code for one specific topology does not affect other topologies. 
+
 ## Description of the JSON format. 
 
 Here is a description of entries you can add in the JSON formatted file. 

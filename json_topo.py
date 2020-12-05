@@ -753,6 +753,7 @@ class JSONTopo(IPTopo):
                 self.add_link(node, voisin, config, voisin_config, link_type)
         
     def __getattr__(self, item):
+        """ Allows the class to have @property """
         if not item.startswith('add'):
             return self.__getattribute__(item)
         return super().__getattr__(item)
@@ -760,7 +761,7 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'ovh_topologies/topo_simple.json',
+        filename = 'ovh_topologies/topo_complete.json',
         debug = True, name = 'OVH Europa topology',
         add_hosts = True, infer_ip = True
     )
