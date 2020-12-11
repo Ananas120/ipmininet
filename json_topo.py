@@ -7,12 +7,13 @@ from copy import deepcopy
 from ipmininet.ipnet import IPNet
 from ipmininet.cli import IPCLI
 from ipmininet.iptopo import IPTopo
-from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CommunityList, AccessList
+from ipmininet.router.config import BGP, OSPF, OSPF6, RouterConfig, AF_INET, AF_INET6, set_rr, bgp_fullmesh, ebgp_session, SHARE, CLIENT_PROVIDER, CommunityList, AccessList
 from ipaddr_utils import format_prefixes, format_address, create_subnets
 from ipaddress import ip_network
 
 _link_types = {
-    'share' : SHARE
+    'share' : SHARE,
+    'client_provider'   : CLIENT_PROVIDER
 }
 
 def get_next_multiple(n, multiple):
@@ -20,7 +21,7 @@ def get_next_multiple(n, multiple):
     return (n // multiple + 1) * multiple
 
 def deep_merge(d1, d2):
-    """ merge 2 dict recursively, it the fileds are identical, d2 overwrites d1 """
+    """ merge 2 dict recursively, it the fields are identical, d2 overwrites d1 """
     result = deepcopy(d1)
     for k, v in d2.items():
         if k not in result:
@@ -31,15 +32,17 @@ def deep_merge(d1, d2):
             result[k] = v
     return result
 
-
 class JSONTopo(IPTopo):
     """
         Topology automatically created based on a JSON-formatted file (see 'topo_tp.json' or 'topo_ovh.son'for structure examples). 
     """
     def __init__(self, filename, *args,
-                 add_hosts = False,
-                 infer_ip = False, infer_ip_lo = False, infer_ip_link = False,
-                 name = 'Network Topology', debug = False,
+                 add_hosts  = False,
+                 infer_ip   = False, 
+                 infer_ip_lo    = False, 
+                 infer_ip_link  = False,
+                 name       = 'Network Topology', 
+                 debug      = False,
                  ** kwargs
                 ):
         """
@@ -761,9 +764,11 @@ class JSONTopo(IPTopo):
 if __name__ == '__main__':
     # allocate_IPS = False to disable IP auto-allocation
     topo = JSONTopo(
-        filename = 'ovh_topologies/topo_complete.json',
-        debug = True, name = 'OVH Europa topology',
-        add_hosts = True, infer_ip = True
+        filename    = 'ovh_topologies/topo_complete.json',
+        name        = 'OVH Europa topology',
+        debug       = True, 
+        add_hosts   = True, 
+        infer_ip    = True
     )
     net = IPNet(topo=topo, allocate_IPs = True)
     print(topo)
