@@ -81,3 +81,9 @@ Here is a list of what we modified after the peer-reviewing phase :
 - We tried to solve the bug on link's ip addresses but we failed to solve this issue. 
     - We tried by replacing ou kwargs {'params1':{'ip':...}, 'params2':{'ip':...}} by a link[node].addParams(ip = ...) and link[voisin].addParams(ip = ...) but it did not work. 
     - We tried by using the .addSubnet(links=[link], ...) method but we faced many strange issues such as : not enough address, needs 2 addresses (for a /31 subnet so there should be 2 available addresses) ; "hosts bits are set" on a /126 subnet and it appears only for ipv6 and not ipv4 (/30 prefix) but the 2 subnets (ipv4 and 6) ending with the same last byte. 
+- We added some features on a security matter :
+    - We added the md5 security authentication for eBGP peers.
+    - We added the maximum prefixes security mechanism.
+    - We added the GTSM security technique
+- We tried adding firewalls to our routers but didn't succeed to add them in the main topology. You can however find the rules we tried to implement in project_tests/security_topo.py, with this topology the rules work fine.
+- We changed the name of some of our routers : fra1_fr5 and fra5_fr5 were changed to fra1 and fra5 so as to better match the pictures in our report.
