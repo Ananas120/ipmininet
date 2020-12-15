@@ -22,7 +22,7 @@
         "net_fra" : {
             "ipv6" : "{net_ovh}0300::/56",
             "ipv4" : "{net_ovh}64/28",
-            "nodes" : ["fra-5_fr5",  "fra-1_fr5"]
+            "nodes" : ["fra_5",  "fra_1"]
         },
         "net_rbx" : {
             "ipv6" : "{net_ovh}0600::/56",
@@ -54,8 +54,8 @@
             "ipv4" : "{net_ovh}208/28",
             "nodes" : ["vienne"]
         },
-        
-        
+
+
         "net_telia" : {
             "ipv6" : "beaf:cafe:baba::/48",
             "ipv4" : "204.32.47.0/24",
@@ -120,13 +120,13 @@
                 "par-gsw" : {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:401"]}}}},
                 "rbx-g2" : {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:406"]}}}},
                 "rbx-g1" : {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:406"]}}}},
-                "fra-5_fr5": {
-                    "clients" : ["sbg-g1", "rbx-g2", "ams-5", "vienne", "varsovie", "fra-1_fr5"],
+                "fra_5": {
+                    "clients" : ["sbg-g1", "rbx-g2", "ams-5", "vienne", "varsovie", "fra_1"],
                     "daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:404"]}}}
                 },
                 "ams-5" : {
                     "peers" : ["varsovie", "vienne"],
-                    "clients" : ["ams-1", "rbx-g2", "rbx-g1", "fra-1_fr5"],
+                    "clients" : ["ams-1", "rbx-g2", "rbx-g1", "fra_1"],
                     "niveau" : 2,
                     "daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:402"]}}}
                 },
@@ -141,12 +141,12 @@
                     "daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:403"]}}}
 
                  },
-                "fra-1_fr5": {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:404"]}}}},
+                "fra_1": {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:404"]}}}},
                 "prague" : {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:407"]}}}},
                 "ams-1" : {"daemons":{"bgp":{"communities": {"do_not_advertise": ["16276:402"]}}}}
             },
             "rconfig" : {
-                "daemons" : {"ospf": {}, "ospf6":{}, 
+                "daemons" : {"ospf": {}, "ospf6":{},
                 "bgp": {
                     "communities": {
                         "set_local_pref": {
@@ -161,7 +161,7 @@
             "anycast" : [
                 {
                     "addresses" : {
-                        "ipv4": "10.10.10.10/32", 
+                        "ipv4": "10.10.10.10/32",
                         "ipv6": "10::10/128"
                     },
                     "nodes" : ["milan", "varsovie", "ams-1"]
@@ -226,7 +226,7 @@
                     "send_community": "16276:80"
                 }}}}
             },
-            
+
             "rconfig" : {
                 "daemons" : {"ospf":{}, "ospf6":{}, "bgp":{}}
             },
@@ -281,7 +281,7 @@
     "links" : {
         "milan"    : [
             "zurich",
-            ["sbg-g1", {"igp_metric": 4}], 
+            ["sbg-g1", {"igp_metric": 4}],
             ["sbg-g2", {"igp_metric": 4}]
         ],
         "zurich"   : [
@@ -290,11 +290,11 @@
         "sbg-g1"   : [
             "sbg-g2",
             "par-th2",
-            ["fra-1_fr5", {"igp_metric" : 2}]
+            ["fra_1", {"igp_metric" : 2}]
         ],
         "sbg-g2"   : [
             ["par-gsw", {"igp_metric" : 2}],
-            ["fra-5_fr5", {"igp_metric": 2}]
+            ["fra_5", {"igp_metric": 2}]
         ],
         "par-th2"  : ["rbx-g1", "rbx-g2", "par-gsw"],
         "par-gsw"  : ["rbx-g2"],
@@ -303,54 +303,54 @@
             ["ams-5", {"igp_metric" : 2}]
         ],
         "rbx-g1"   : [],
-        
-        "fra-5_fr5": [
-            "fra-1_fr5",
+
+        "fra_5": [
+            "fra_1",
             ["rbx-g2", {"igp_metric" : 3}],
-            ["ams-5", {"igp_metric" : 2}], 
+            ["ams-5", {"igp_metric" : 2}],
             ["vienne", {"igp_metric": 2}]
         ],
-        "fra-1_fr5": {
+        "fra_1": {
             "igp_metric" : 2,
             "voisins" : ["ams-1", "rbx-g1"]
         },
         "varsovie" : {
             "igp_metric" : 4,
-            "voisins" : ["fra-5_fr5", "prague", "ams-1"]
+            "voisins" : ["fra_5", "prague", "ams-1"]
         },
         "prague"   : ["vienne"],
         "vienne"   : [],
         "ams-5"    : ["ams-1"],
         "ams-1"    : [],
-        
-        "telia_fra"   : ["fra-1_fr5", "fra-5_fr5"],
+
+        "telia_fra"   : ["fra_1", "fra_5"],
         "telia_mil"   : ["milan"],
         "telia_var"   : ["varsovie"],
         "telia_ams"   : ["ams-1"],
-        
+
         "upc_var"     : ["varsovie"],
         "upc_vie"     : ["vienne"],
-        "upc_fra"     : ["fra-5_fr5", "upc_ams"],
+        "upc_fra"     : ["fra_5", "upc_ams"],
         "upc_zrh"     : ["zurich"],
         "upc_ams"     : ["ams-5"],
-        
-        "sea_fra" : ["fra-5_fr5"],
+
+        "sea_fra" : ["fra_5"],
         "sea_mil" : ["milan"],
         "sea_par" : ["par-th2"],
-        
-        "level3_fra"  : ["fra-5_fr5"],
+
+        "level3_fra"  : ["fra_5"],
         "level3_par"  : ["par-gsw"],
-        
-        "google_fra"  : ["fra-5_fr5"],
+
+        "google_fra"  : ["fra_5"],
         "google_par"  : ["par-gsw","par-th2"],
-        
+
         "cogent_par"  : ["par-gsw","par-th2"],
         "cogent_ams"  : ["ams-1"],
         "cogent_var"  : ["varsovie"],
-        
+
         "amazon_par"  : ["par-th2"],
-        
+
         "bbone_par": ["par-th2"],
-        "bbone_fra": ["fra-5_fr5"]
+        "bbone_fra": ["fra_5"]
     }
 }

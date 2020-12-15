@@ -19,7 +19,8 @@ router bgp ${node.bgpd.asn}
     neighbor ${n.peer} port ${n.port}
     neighbor ${n.peer} description ${n.description}
     % if n.security and n.ebgp :
-    nieghbor ${n.peer} ttl-security hops 1
+    neighbor ${n.peer} ttl-security hops 1
+    neighbor ${n.peer} maximum-prefix 500 60
     % elif n.ebgp_multihop:
     neighbor ${n.peer} ebgp-multihop
     % endif

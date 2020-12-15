@@ -19,6 +19,8 @@ interface ${intf.name}
   ip ospf dead-interval ${intf.dead_int}
   ip ospf hello-interval ${intf.hello_int}
   % endif
+  ip ospf message-digest-key 1 md5 PASSWRDSIMQUEFLO
+  ip ospf authentication message-digest
   <%block name="interface"/>
 !
 % endfor
