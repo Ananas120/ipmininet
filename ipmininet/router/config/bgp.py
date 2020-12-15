@@ -568,9 +568,10 @@ class Peer:
         # We default to nexthop self for eBGP routes only
         self.nh_self = 'next-hop-self'
         # We enable eBGP multihop if eBGP is in use
-        ebgp = self.asn != base.asn
-        self.ebgp_multihop = ebgp
-        self.description = '%s (%sBGP)' % (node, 'e' if ebgp else 'i')
+        self.ebgp = self.asn != base.asn
+        self.security = True
+        self.ebgp_multihop = self.ebgp
+        self.description = '%s (%sBGP)' % (node, 'e' if self.ebgp else 'i')
 
     @staticmethod
     def _find_peer_address(base: 'Router', peer: str, v6=False) \

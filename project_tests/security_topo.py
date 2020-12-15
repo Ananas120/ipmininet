@@ -92,15 +92,15 @@ class SecurityTopo(IPTopo):
                         # we allow the icmp protocol
                         Allow(proto = 'icmp')])]
 
-        # ipv6 rules not working yet.
+        # ipv6 rules
         ip6_rule = [Rule('-P INPUT DROP'),
                     Rule('-A INPUT -i lo -j ACCEPT'),
                     Rule('-A INPUT -p icmpv6 -j ACCEPT'),
-                    Rule('-A INPUT -p tcp --dport 179 -m hl --hl-lt 255 -j DROP'),
+                    Rule('-A INPUT -p tcp --dport 179 -m hl --hl-lt 254 -j DROP'),
                     Rule('-A INPUT -p tcp -i eth0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT'),
                     
-                    # this one rule is not so easy to implement here
-                    #Rule('-A INPUT -p tcp -s fc00:0::/96 -j ACCEPT')
+                    # this seems not very safe but i did not find a rule to avoid it yet (i tried using the -s option but didn't manage to get something good)
+                    Rule('-A INPUT -p tcp -j ACCEPT')
                    ]
 
         """ Routers """
@@ -123,6 +123,7 @@ class SecurityTopo(IPTopo):
         self.addAS(2, [as2_r1])
 
         """ Daemons """
+
         add_daemon(serv1, serv2, ospf = False)
 
         add_daemon(as1_r1, as1_r2, as1_rr)
@@ -131,6 +132,8 @@ class SecurityTopo(IPTopo):
 
         # we add the ip_rule to the router of our AS that is connected to the other AS
         as1_rr.addDaemon(IPTables, rules = ip_rule)
+        #as1_r1.addDaemon(IPTables, rules = ip_rule)
+        #as1_r2.addDaemon(IPTables, rules = ip_rule)
         as1_rr.addDaemon(IP6Tables, rules = ip6_rule)
 
         """ Links """
